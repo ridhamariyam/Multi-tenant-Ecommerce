@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.tenants.constants import DEFAULT_CURRENCY
@@ -247,9 +247,20 @@ class Settings(BaseSettings):
     smtp_password: str | None = Field(default=None, repr=False)
     # "starttls" (port 587), "ssl" (port 465) or "none" (local relay only).
     smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    # Alternative to SMTP_SECURITY: true = STARTTLS (or implicit TLS on port
+    # 465), false = none. Ignored when SMTP_SECURITY is set explicitly.
+    smtp_use_tls: bool | None = None
     smtp_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
-    email_from_address: str = "no-reply@localhost"
-    email_from_name: str = "CliQ."
+    # SMTP_FROM_EMAIL / SMTP_FROM_NAME are accepted as aliases. With Gmail the
+    # address must be the account itself or a verified "Send mail as" alias.
+    email_from_address: str = Field(
+        default="no-reply@localhost",
+        validation_alias=AliasChoices("email_from_address", "smtp_from_email"),
+    )
+    email_from_name: str = Field(
+        default="CliQ.",
+        validation_alias=AliasChoices("email_from_name", "smtp_from_name"),
+    )
     email_max_attempts: int = Field(default=6, ge=1, le=20)
     # Where merchants sign in (password-reset links). Unset = https://app.<root>/admin.
     console_url: str | None = None
@@ -379,7 +390,55 @@ class Settings(BaseSettings):
             raise ValueError("STORAGE_BACKEND=s3 needs S3_BUCKET")
         if self.jwt_secret == self.jwt_refresh_secret:
             raise ValueError("JWT_SECRET and JWT_REFRESH_SECRET must differ")
+        self._validate_smtp()
         return self
+
+    @property
+    def smtp_is_gmail(self) -> bool:
+        return (self.smtp_host or "").strip().lower() in {"smtp.gmail.com", "smtp.googlemail.com"}
+
+    def _validate_smtp(self) -> None:
+        """Refuse an SMTP setup that cannot work or would leak credentials.
+
+        Nothing is checked while SMTP_HOST is unset: emails then wait in the
+        outbox and are sent once it is configured.
+        """
+        if self.smtp_use_tls is not None and "smtp_security" not in self.model_fields_set:
+            self.smtp_security = (
+                ("ssl" if self.smtp_port == 465 else "starttls") if self.smtp_use_tls else "none"
+            )
+        if not self.smtp_host:
+            return
+        self.smtp_host = self.smtp_host.strip()
+        if self.smtp_password and self.smtp_is_gmail:
+            # Google shows App Passwords as "abcd efgh ijkl mnop"; the spaces are not part of it.
+            self.smtp_password = "".join(self.smtp_password.split())
+        if bool(self.smtp_username) != bool(self.smtp_password):
+            raise ValueError("SMTP_USERNAME and SMTP_PASSWORD must be set together")
+        if self.smtp_is_gmail:
+            if not self.smtp_username:
+                raise ValueError("Gmail SMTP needs SMTP_USERNAME and an App Password in SMTP_PASSWORD")
+            if self.smtp_security == "none":
+                raise ValueError("Gmail SMTP needs TLS: SMTP_SECURITY=starttls (port 587) or ssl (port 465)")
+            if len(self.smtp_password or "") != 16:
+                raise ValueError(
+                    "SMTP_PASSWORD for Gmail must be a 16-character App Password "
+                    "(Google Account -> Security -> App passwords), not the account password"
+                )
+        if self.smtp_security == "starttls" and self.smtp_port == 465:
+            raise ValueError("Port 465 uses implicit TLS: set SMTP_SECURITY=ssl (or use port 587 for STARTTLS)")
+        if self.smtp_security == "ssl" and self.smtp_port == 587:
+            raise ValueError("Port 587 uses STARTTLS: set SMTP_SECURITY=starttls (or use port 465 for ssl)")
+        address = self.email_from_address.strip()
+        local, _, domain = address.rpartition("@")
+        if not local or "." not in domain or any(c.isspace() for c in address):
+            raise ValueError(f"EMAIL_FROM_ADDRESS / SMTP_FROM_EMAIL is not an email address: {address!r}")
+        self.email_from_address = address
+        if self.is_production:
+            if domain.lower() in {"localhost", "example.com"} or domain.lower().endswith(".example.com"):
+                raise ValueError("Set EMAIL_FROM_ADDRESS / SMTP_FROM_EMAIL to a real sender address in production")
+            if self.smtp_security == "none" and self.smtp_host not in {"localhost", "127.0.0.1"}:
+                raise ValueError("Refusing to send SMTP credentials and mail unencrypted in production (SMTP_SECURITY=none)")
 
 
 @lru_cache

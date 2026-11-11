@@ -134,7 +134,7 @@ Generate secrets with `openssl rand -hex 32`. Generate the Fernet key with
   - `SEED_TENANT_NAME`, `SEED_TENANT_SLUG`, `SEED_TENANT_DOMAIN`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PHONE`, `SEED_ADMIN_PASSWORD` (≥ 12 chars)
 - **Tuning:** `API_WORKERS`, `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `BACKUP_INTERVAL_SECONDS`, `BACKUP_KEEP_DAYS`, `LOG_LEVEL`, `DISK_ALERT_FREE_PERCENT`
 - **Monitoring:** `SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE`, `ALERT_WEBHOOK_URL`
-- **Email:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`
+- **Email:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY` (or `SMTP_USE_TLS`), `SMTP_USERNAME`, `SMTP_PASSWORD` (Gmail: App Password), `SMTP_TIMEOUT_SECONDS`, `EMAIL_FROM_ADDRESS` (or `SMTP_FROM_EMAIL`), `EMAIL_FROM_NAME` (or `SMTP_FROM_NAME`), `EMAIL_MAX_ATTEMPTS`
 - **Razorpay (platform account: your store and plan billing):** `RAZORPAY_ENVIRONMENT`, `PRODUCTION_RAZORPAY_API_KEY`, `PRODUCTION_RAZORPAY_API_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_BILLING_WEBHOOK_SECRET`, `RAZORPAY_PLATFORM_TENANT_SLUGS`, `NEXT_PUBLIC_RAZORPAY_KEY_ID` (build time)
 - **Sign-in:** `MSG91_AUTH_KEY`, `NEXT_PUBLIC_MSG91_WIDGET_ID`, `NEXT_PUBLIC_MSG91_TOKEN_AUTH`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
 - **Shipping / Sheets / AI:** `SHIPROCKET_EMAIL`, `SHIPROCKET_PASSWORD`, `SHIPROCKET_TENANT_ID`, `SHIPROCKET_WEBHOOK_TOKEN`, `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON`, `AI_PROVIDER`, `FASHN_API_KEY`, `FASHN_WEBHOOK_SECRET`
@@ -231,7 +231,7 @@ Set `R=<root domain>`.
 | T6 | E2E suite from your laptop: `cd e2e && E2E_STORE_URL=https://<slug>.$R E2E_SECOND_STORE_URL=https://<brand2>.$R E2E_SECOND_BRAND_NAME=… E2E_CONSOLE_URL=https://app.$R/admin E2E_MERCHANT_EMAIL=… E2E_MERCHANT_PASSWORD=… npx playwright test` | 4/4 |
 | T7 | Guest buys a ₹1–10 product online with a real card/UPI on a brand with its own live Razorpay keys | Order PAID in the console; Razorpay dashboard shows the webhook delivered with 200 |
 | T8 | Refund that order from the console | Razorpay shows the refund; order/payment shows REFUNDED after `refund.processed` |
-| T9 | Place an order with an email address | Confirmation email arrives (check headers: SPF/DKIM pass) |
+| T9 | `$C run --rm api python -m app.commands.smtp_check --to <external address>`, then place an order with that email, and request a merchant password reset | `smtp_check` prints `"ok": true` with TLS 1.2/1.3 and `authenticated: true`; three emails arrive (test, order confirmation, reset link) from the configured sender, the HTML card renders, headers show SPF/DKIM pass, and `$C logs api scheduler` contain no password, reset token or recipient address. Failure check: set a wrong `SMTP_PASSWORD`; `smtp_check` reports `SMTPAuthenticationError` and exits 1, the `emails` job shows failed in the System tab, and queued emails stay PENDING (they send once fixed) |
 | T10 | A test brand subscribes to Starter; then cancel | Plan becomes Starter, `subscription.*` webhooks are 200; after cancel the brand falls back to Free limits |
 | T11 | Submit 11 guest checkouts in a minute from two different networks | Only the network that exceeded the limit gets 429 (proves F1 on the public server) |
 | T12 | Temporarily set `DISK_ALERT_FREE_PERCENT=99`, restart `scheduler` | Alert message arrives at `ALERT_WEBHOOK_URL`; set it back |
@@ -252,3 +252,19 @@ Set `R=<root domain>`.
 | Razorpay Subscriptions billing | IMPLEMENTED, NOT LIVE-PROVIDER VERIFIED |
 | SMTP email, MSG91, Google sign-in, Shiprocket, Sheets, Sentry, alert webhook | IMPLEMENTED, NOT LIVE-PROVIDER VERIFIED |
 | Wildcard certificate (DNS-01), CI, metrics, encryption-key rotation, HA | NOT IMPLEMENTED |
+
+## 10. Email workflows (2026-11-12)
+
+| Email | Status |
+|---|---|
+| Order confirmation (COD at placement; online orders after payment, so it doubles as the payment confirmation) | IMPLEMENTED |
+| Merchant password reset | IMPLEMENTED |
+| Review request, abandoned-cart reminder, marketing campaigns (with unsubscribe) | IMPLEMENTED |
+| Account / email verification | NOT IMPLEMENTED |
+| Email OTP | NOT IMPLEMENTED (customer OTP is SMS via MSG91) |
+| Refund notification | NOT IMPLEMENTED |
+| Staff invitation / brand notices | NOT IMPLEMENTED |
+
+The SMTP transport is covered by automated tests: settings and validation, a real local SMTP server, auth failure, timeout,
+unreachable server, Gmail quota, rejected recipient, retry/backoff, STARTTLS before login, the multipart format, and the API
+succeeding while SMTP is down. **Live Gmail delivery: NOT VERIFIED** until T9 has been run and the email was received.

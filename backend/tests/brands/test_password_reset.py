@@ -5,7 +5,12 @@ from __future__ import annotations
 import re
 from urllib.parse import unquote
 
+import pytest
 from sqlalchemy import select
+
+from app.core.config import get_settings
+from app.notifications import email
+from app.notifications.models import EmailStatus
 
 from app.notifications.models import OutboxEmail
 from tests.brands.conftest import PASSWORD
@@ -59,3 +64,30 @@ async def test_a_made_up_token_is_refused(platform):
     response = await platform.post(f"{AUTH}/password/reset", json={"token": "x" * 43, "password": NEW_PASSWORD})
     assert response.status_code == 400
     assert response.json()["error"]["details"][0]["field"] == "token"
+
+
+async def test_a_reset_request_succeeds_while_the_mail_server_is_down(platform, session, make_merchant, monkeypatch):
+    """The API only queues the email; SMTP being unreachable never fails the request."""
+
+    class Down:
+        def send(self, message):
+            raise email.SmtpConnectError(ConnectionRefusedError(111, "Connection refused"))
+
+        def reset(self):
+            pass
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(get_settings(), "smtp_host", "smtp.gmail.com")
+    monkeypatch.setattr(email, "open_transport", Down)
+    await make_merchant("owner@alpha.example")
+
+    response = await platform.post(f"{AUTH}/password/forgot", json={"email": "owner@alpha.example"})
+
+    assert response.status_code == 200
+    with pytest.raises(email.EmailProviderError, match="ConnectionRefusedError"):
+        await email.send_due(session)  # the scheduler job fails and alerts; the email waits
+    row = await session.scalar(select(OutboxEmail))
+    assert row.kind == "merchant-password-reset"
+    assert row.status == EmailStatus.PENDING and row.attempts == 0

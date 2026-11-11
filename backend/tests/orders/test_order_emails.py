@@ -16,11 +16,29 @@ from app.orders.models import Order
 from tests.orders.test_order_sheets import _guest_order
 
 
+class FakeTransport:
+    """Stands in for SmtpTransport; `fail` makes every send raise it."""
+
+    def __init__(self, sent: list, fail: BaseException | None = None) -> None:
+        self.sent, self.fail = sent, fail
+
+    def send(self, message) -> None:
+        if self.fail is not None:
+            raise self.fail
+        self.sent.append(message)
+
+    def reset(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
 @pytest.fixture
 def smtp(monkeypatch):
     sent: list = []
     monkeypatch.setattr(get_settings(), "smtp_host", "smtp.example.test")
-    monkeypatch.setattr(email, "send_message", lambda message: sent.append(message))
+    monkeypatch.setattr(email, "open_transport", lambda: FakeTransport(sent))
     return sent
 
 
@@ -31,7 +49,7 @@ async def test_a_cod_order_gets_one_confirmation(client, session, variant, smtp)
     assert await queue_order_confirmations(session) == 0  # never twice
     result = await email.send_due(session)
 
-    assert result == {"sent": 1, "failed": 0}
+    assert result == {"sent": 1, "failed": 0, "retrying": 0}
     (message,) = smtp
     assert message["To"] == "asha@example.com"
     assert placed["order_number"] in message["Subject"]
@@ -54,21 +72,19 @@ async def test_an_unpaid_online_order_waits_for_payment(client, session, variant
 
 
 async def test_failures_retry_with_backoff_then_give_up(session, monkeypatch, smtp):
-    def broken(_message):
-        raise smtplib.SMTPServerDisconnected("connection closed")
-
-    monkeypatch.setattr(email, "send_message", broken)
+    broken = smtplib.SMTPServerDisconnected("connection closed")
+    monkeypatch.setattr(email, "open_transport", lambda: FakeTransport([], fail=broken))
     monkeypatch.setattr(get_settings(), "email_max_attempts", 2)
     await email.enqueue(session, kind="test", dedupe_key="t-1", to="a@example.com", subject="s", text="t")
     await session.commit()
 
     first = await email.send_due(session)
     row = await session.scalar(select(OutboxEmail))
-    assert first == {"sent": 0, "failed": 1}
+    assert first == {"sent": 0, "failed": 0, "retrying": 1}
     assert row.status == EmailStatus.PENDING and row.attempts == 1 and "SMTPServerDisconnected" in row.last_error
 
     # Not due yet: backoff.
-    assert (await email.send_due(session))["failed"] == 0
+    assert await email.send_due(session) == {"sent": 0, "failed": 0}
     row.send_after = row.created_at
     await session.commit()
     await email.send_due(session)

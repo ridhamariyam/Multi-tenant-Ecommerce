@@ -79,7 +79,18 @@ Then, at the providers (when you have accounts):
     secret = `RAZORPAY_BILLING_WEBHOOK_SECRET` (or the same secret). Enable **Subscriptions** on the account.
 - Every other brand connects **its own** Razorpay account in its console
   (Integrations → Online payments); the console shows the brand its webhook URL.
-- SMTP: set `SMTP_*` and `EMAIL_FROM_ADDRESS` on a domain with SPF and DKIM configured at your provider.
+- SMTP: set `SMTP_*` and `EMAIL_FROM_ADDRESS` on a domain with SPF and DKIM configured at your provider
+  (Gmail: `smtp.gmail.com`, 587, `starttls`, an App Password; see `.env.production.example`). Then:
+  ```sh
+  $C run --rm api python -m app.commands.smtp_check                 # STARTTLS + login only
+  $C run --rm api python -m app.commands.smtp_check --to you@example.com
+  ```
+  How sending works: emails are written to the `email_outbox` table in the same transaction as the event
+  and sent by the scheduler's `emails` job (every 30 s, one SMTP connection per batch, 20 s timeout).
+  - If the provider is down or login/TLS fails, emails stay queued, the job shows failed in the System tab, and the alert webhook fires.
+  - A permanently rejected address (5xx) fails that one email.
+  - Transient errors retry with backoff up to `EMAIL_MAX_ATTEMPTS`.
+  - The API never waits on SMTP.
 - Shiprocket tracking webhook: `https://api.<root>/api/v1/courier-webhooks/tracking`, token = `SHIPROCKET_WEBHOOK_TOKEN`
 
 ## Updating (deploy procedure)
