@@ -1,0 +1,12 @@
+.return-reasons-page .return-reasons-controls { align-items: flex-start; gap: 8px; margin-bottom: 9px; }
+.return-reasons-page .return-reasons-controls > .field { flex: 0 1 270px; min-width: 170px; }
+.return-reasons-page .return-reasons-controls .field > input { flex: none; min-width: 0; height: 38px; }
+.return-reasons-page .return-reasons-controls > button { min-height: 38px; margin-top: 23px; }
+@media (max-width: 600px) {
+  .return-reasons-page .return-reasons-controls > .field { flex: 1 1 100%; }
+  .return-reasons-page .return-reasons-controls > button { margin-top: 0; }
+}
+.return-reasons-page .return-reasons-table-panel { padding: 10px 12px; border-radius: 18px; }
+.return-reasons-page .return-reasons-table-panel .table-wrap { max-height: min(52dvh, 390px); overflow: auto; overscroll-behavior: contain; }
+.return-reasons-page .return-reasons-table-panel th { position: sticky; top: 0; z-index: 1; }
+.return-reasons-page .return-reasons-table-panel :is(th, td) { padding: 8px 10px; }

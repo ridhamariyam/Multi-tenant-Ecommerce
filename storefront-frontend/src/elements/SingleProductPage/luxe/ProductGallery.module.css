@@ -1,0 +1,327 @@
+/*
+ * Product image viewer. Desktop: a 2 x 48x64 thumbnail grid beside a 3:4
+ * main image that opens a full-screen viewer. Phones: the main image becomes
+ * a swipeable strip with dots and the thumbnails run underneath.
+ */
+
+.gallery {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cover {
+  object-fit: cover;
+  object-position: top center;
+}
+
+.contain {
+  object-fit: contain;
+}
+
+/* -------------------------------- Thumbnails -------------------------------- */
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  gap: 4px;
+  flex: none;
+}
+
+.thumb {
+  position: relative;
+  width: 48px;
+  height: 64px;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  background: var(--card, #f4f1ec);
+  cursor: pointer;
+}
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 3px solid transparent;
+  pointer-events: none;
+  transition: border-color 0.2s ease;
+}
+.thumb:hover::after {
+  border-color: rgba(0, 0, 0, 0.25);
+}
+.thumbActive::after,
+.thumbActive:hover::after {
+  border-color: var(--ink, #1a1714);
+}
+.thumb:focus-visible {
+  outline: 2px solid var(--ink, #1a1714);
+  outline-offset: 2px;
+}
+
+/* --------------------------------- Main image --------------------------------- */
+
+.mainWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.main {
+  display: flex;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  scroll-snap-type: x mandatory;
+  background: var(--card, #f4f1ec);
+}
+.main:focus-visible {
+  outline: 2px solid var(--ink, #1a1714);
+  outline-offset: 2px;
+}
+
+.empty {
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--muted, #8b857e);
+}
+
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  scroll-snap-align: start;
+  cursor: zoom-in;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink, #1a1714);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-50%);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+.arrowPrev {
+  left: 12px;
+}
+.arrowNext {
+  right: 12px;
+}
+.mainWrap:hover .arrow,
+.arrow:focus-visible {
+  opacity: 1;
+}
+
+.dots {
+  display: none;
+}
+
+/* ---------------------------------- Viewer ---------------------------------- */
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 9900;
+  background: #fff;
+  animation: viewerIn 0.25s ease both;
+}
+@keyframes viewerIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.viewerTrack {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+.viewerTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.viewerSlide {
+  display: flex;
+  flex: 0 0 100%;
+  justify-content: center;
+  scroll-snap-align: start;
+}
+
+.viewerImage {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 3 / 4;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-out;
+}
+
+.viewerClose,
+.viewerArrow {
+  position: absolute;
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  background: none;
+  color: #111;
+  cursor: pointer;
+}
+.viewerClose {
+  top: 46px;
+  right: 46px;
+}
+.viewerArrow {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.viewerPrev {
+  left: 40px;
+}
+.viewerNext {
+  right: 40px;
+}
+
+.viewerRail {
+  position: absolute;
+  top: 50%;
+  right: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100% - 160px);
+  overflow-y: auto;
+  transform: translateY(-50%);
+  scrollbar-width: none;
+}
+.viewerThumb {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 80px;
+  padding: 0;
+  border: none;
+  background: var(--card, #f4f1ec);
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.viewerThumb:hover,
+.viewerThumbActive {
+  opacity: 1;
+}
+
+.viewerDots {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+.viewerDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.viewerDotActive {
+  background: #fff;
+}
+
+/* -------------------------------- Breakpoints -------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .main,
+  .viewerTrack {
+    scroll-behavior: auto;
+  }
+}
+
+/* Phones and small tablets: swipeable strip with dots, thumbnails below. */
+@media (max-width: 749px) {
+  .gallery {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .thumbs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .thumbs::-webkit-scrollbar {
+    display: none;
+  }
+  .thumb {
+    flex: none;
+  }
+  .main {
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .main::-webkit-scrollbar {
+    display: none;
+  }
+  .arrow {
+    display: none;
+  }
+  .dots {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    display: flex;
+    gap: 8px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+    transition: background-color 0.2s ease;
+  }
+  .dotActive {
+    background: #fff;
+  }
+
+  .viewerClose {
+    top: 16px;
+    right: 16px;
+  }
+  .viewerArrow,
+  .viewerRail {
+    display: none;
+  }
+  .viewerImage {
+    width: 100%;
+    height: auto;
+    align-self: center;
+  }
+  .viewerDots {
+    bottom: 28px;
+  }
+}

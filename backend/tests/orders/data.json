@@ -1,0 +1,38 @@
+{
+  "routes": {
+    "addresses": "/api/v1/addresses",
+    "checkout": "/api/v1/checkout",
+    "orders": "/api/v1/orders",
+    "admin_orders": "/api/v1/admin/orders",
+    "cart": "/api/v1/cart"
+  },
+  "customers": {
+    "buyer": "+919822220001",
+    "intruder": "+919822220002",
+    "tenant_a": "+919822220003",
+    "tenant_b": "+919822220004",
+    "racer_one": "+919822220005",
+    "racer_two": "+919822220006"
+  },
+  "address": {
+    "full_name": "Neha Kapoor",
+    "phone": "+919876500001",
+    "address_line_1": "12 Residency Road",
+    "address_line_2": "Flat 4B",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "postal_code": "560025",
+    "country": "India"
+  },
+  "variant": {
+    "sku": "ORD-TSH-BLK-M",
+    "name": "Black / M",
+    "price": "999.00",
+    "status": "ACTIVE",
+    "initial_quantity": 10,
+    "options": [
+      { "name": "Color", "value": "Black" },
+      { "name": "Size", "value": "M" }
+    ]
+  }
+}

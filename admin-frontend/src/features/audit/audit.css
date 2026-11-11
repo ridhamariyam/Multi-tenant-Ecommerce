@@ -1,0 +1,19 @@
+.audit-page .audit-filters { gap: 7px; margin-bottom: 9px; }
+.audit-page .audit-filters > :is(input, button) { min-width: 0; min-height: 40px; padding: 7px 10px; }
+.audit-page .audit-filters > input:not([type="date"]) { flex: 1 1 175px; }
+.audit-page .audit-filters > input[type="date"] { flex: 0 1 145px; }
+.audit-page .audit-filters > button { flex: 0 0 auto; font-size: 12px; }
+.audit-page .audit-filters > button[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.audit-page .audit-table-panel { border-radius: 18px; }
+.audit-page .audit-table-panel :is(th, td) { padding: 8px 9px; line-height: 1.35; }
+.audit-page .audit-table-panel td:first-child { white-space: nowrap; }
+.audit-page .audit-table-panel td:nth-child(5) { min-width: 220px; }
+.audit-page .audit-action { border: 0; border-radius: 0; background: none; color: var(--accent); padding: 0; text-align: left; font-weight: 600; white-space: normal; }
+.audit-page .audit-action:hover { text-decoration: underline; }
+.audit-page .modal-backdrop { align-items: center; padding: 16px; }
+.audit-page .modal { max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }
+.audit-page .modal-body { min-height: 0; overflow-y: auto; }
+.audit-page .audit-details-heading { margin: 12px 0 6px; }
+.audit-page .audit-details { max-height: min(36dvh, 300px); overflow: auto; overflow-wrap: anywhere; }
+@media (max-width: 860px) { .audit-page .audit-table-panel { flex: none; height: min(430px, 65dvh); min-height: 280px; } }
+@media (max-width: 600px) { .audit-page .audit-filters > input:not([type="date"]), .audit-page .audit-filters > input[type="date"] { flex: 1 1 140px; } }

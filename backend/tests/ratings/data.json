@@ -1,0 +1,21 @@
+{
+  "routes": {
+    "reviews": "/api/v1/reviews",
+    "admin_reviews": "/api/v1/admin/reviews",
+    "categories": "/api/v1/catalogue/categories",
+    "products": "/api/v1/catalogue/products"
+  },
+  "review": {
+    "rating": 4,
+    "title": "Wore it all week",
+    "comment": "Fabric held up better than I expected."
+  },
+  "variant": {
+    "sku": "REV-SKU-BASE",
+    "name": "Standard Variant",
+    "price": "999.00",
+    "status": "ACTIVE",
+    "initial_quantity": 10,
+    "options": [{ "name": "Size", "value": "M" }]
+  }
+}

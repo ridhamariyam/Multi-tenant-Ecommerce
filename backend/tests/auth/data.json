@@ -1,0 +1,10 @@
+{
+  "routes": {
+    "staff_verify": "/api/v1/staff/auth/verify-otp",
+    "rbac_admin_only": "/rbac/admin-only",
+    "rbac_staff_or_above": "/rbac/staff-or-above"
+  },
+  "admin": { "phone": "+919800000001", "email": "admin@zeen.com" },
+  "staff": { "phone": "+919800000002", "email": "staff@zeen.com" },
+  "customer": { "phone": "+919812345678" }
+}

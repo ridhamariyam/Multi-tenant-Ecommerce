@@ -1,0 +1,15 @@
+.reviews-page > .tabs { margin-bottom: 9px; }
+.reviews-page .reviews-table-panel { padding: 12px; }
+.reviews-page .reviews-filters { align-items: center; gap: 8px; margin-bottom: 9px; }
+.reviews-page .reviews-filters select { width: min(220px, 100%); min-height: 40px; }
+.reviews-page .reviews-filters .muted { font-size: 11px; }
+.reviews-page .reviews-table-panel .table-wrap { max-height: min(54dvh, 480px); overflow: auto; }
+.reviews-page .reviews-table-panel th { position: sticky; top: 0; z-index: 1; }
+.reviews-page .reviews-table-panel :is(th, td) { padding: 8px 9px; vertical-align: top; }
+.reviews-page .review-product { display: flex; align-items: center; gap: 8px; min-width: 155px; }
+.reviews-page .review-product :is(img, .product-image-placeholder) { flex: 0 0 40px; width: 40px; height: 48px; object-fit: contain; background: var(--surface-strong); }
+.reviews-page .review-copy { min-width: 170px; max-width: 340px; max-height: 90px; overflow-y: auto; overflow-wrap: anywhere; }
+.reviews-page .review-photos { display: flex; gap: 5px; max-width: 130px; overflow-x: auto; }
+.reviews-page .review-photo { display: block; width: 42px; height: 48px; object-fit: contain; background: var(--surface-strong); }
+.reviews-page .reviews-table-panel .pagination { margin-top: 8px; }
+@media (max-width: 800px) { .reviews-page .reviews-table-panel .table-wrap { max-height: min(58dvh, 480px); } }

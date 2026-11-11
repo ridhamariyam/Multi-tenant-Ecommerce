@@ -1,0 +1,24 @@
+{
+    "routes": { "wishlist": "/api/v1/wishlist" },
+    "customers": {
+      "owner": "+919811110001",
+      "intruder": "+919811110002",
+      "tenant_a": "+919811110003",
+      "tenant_b": "+919811110004",
+      "cross_host": "+919811110005",
+      "shopper_one": "+919811110006",
+      "shopper_two": "+919811110007"
+    },
+    "variant": {
+      "sku": "TSH-BLK-M",
+      "name": "Black / M",
+      "price": "999.00",
+      "status": "ACTIVE",
+      "initial_quantity": 10,
+      "options": [
+        { "name": "Color", "value": "Black" },
+        { "name": "Size", "value": "M" }
+      ]
+    }
+  }
+  

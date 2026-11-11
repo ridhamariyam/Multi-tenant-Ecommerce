@@ -1,0 +1,82 @@
+.page {
+  --ink: #1a1714;
+  --ink-soft: #55504b;
+  --muted: #8b857e;
+  --line: #e7e2db;
+  --cream: #fbfaf8;
+  --accent: #8f5a3c;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Montserrat, Helvetica, sans-serif;
+  min-height: 60vh;
+}
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(40px, 6vw, 80px) clamp(16px, 2.8vw, 40px) 100px;
+}
+.header { margin-bottom: 28px; }
+.title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(28px, 5vw, 40px);
+  margin: 0;
+}
+.filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.filterButton {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: 8px 18px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+.filterButton:hover { border-color: var(--accent); color: var(--accent); }
+.filterButtonActive { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.tableCard {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.tableScroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.headRow { background: #faf7f2; }
+.th {
+  text-align: left;
+  padding: 16px 20px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.row { transition: background 0.15s ease; }
+.row:hover { background: #faf7f2; }
+.rowBorder { border-bottom: 1px solid var(--line); }
+.td { padding: 16px 20px; font-size: 14px; color: var(--ink-soft); }
+.tdOrderId { font-weight: 600; color: var(--ink); }
+.tdAmount { font-weight: 600; color: var(--ink); }
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.statusDot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dotEmerald { background: #059669; }
+.textEmerald { color: #059669; }
+.dotAmber { background: #d97706; }
+.textAmber { color: #d97706; }
+.dotRose { background: #e11d48; }
+.textRose { color: #e11d48; }
+.dotBlue { background: #2563eb; }
+.textBlue { color: #2563eb; }
+.emptyState { padding: 64px 20px; text-align: center; color: var(--muted); }
+.emptyIcon { width: 44px; height: 44px; margin: 0 auto 14px; display: block; color: var(--line); }
+.emptyText { font-size: 15px; margin: 0; }

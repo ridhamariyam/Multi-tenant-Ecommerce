@@ -1,0 +1,130 @@
+name: tws-ecommerce-core
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: tws_ec2_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tws_ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-tws}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tws_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tws} -d ${POSTGRES_DB:-tws_ecommerce}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tws_ec2_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-56379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-compatible object storage for development (product images, later AI
+  # outputs). MinIO no longer publishes images on Docker Hub; this is the
+  # Bitnami build of the community server, pinned. Console: localhost:59001.
+  minio:
+    image: bitnamilegacy/minio:2025.5.24
+    container_name: tws_ec2_minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-cliq_minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-cliq_minio_dev_password}
+    ports:
+      - "${MINIO_PORT:-59000}:9000"
+      - "${MINIO_CONSOLE_PORT:-59001}:9001"
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+    container_name: tws_ec2_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tws}:${POSTGRES_PASSWORD:-tws_dev_password}@postgres:5432/${POSTGRES_DB:-tws_ecommerce}
+      REDIS_URL: redis://redis:6379/0
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    # Uploaded product images are written to the app's own filesystem
+    # (LocalStorage -> var/uploads, served back at /media). Without this
+    # volume they live only in the container layer and every rebuild throws
+    # them away, the way postgres_data stops the database being ephemeral.
+    volumes:
+      - uploads_data:/app/var/uploads
+    ports:
+      - "${API_PORT:-58000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  order-expiry:
+    build:
+      context: ./backend
+    container_name: tws_ec2_order_expiry
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tws}:${POSTGRES_PASSWORD:-tws_dev_password}@postgres:5432/${POSTGRES_DB:-tws_ecommerce}
+      REDIS_URL: redis://redis:6379/0
+    command:
+      - sh
+      - -c
+      - while true; do python -m app.commands.expire_orders || echo "order expiry run failed" >&2; sleep 300; done
+
+  # Shiprocket: refresh tracking that no webhook delivered, and look up
+  # bookings whose outcome was unknown. Does nothing until credentials are
+  # set and a store enables shipping.
+  shipment-sync:
+    build:
+      context: ./backend
+    container_name: tws_ec2_shipment_sync
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tws}:${POSTGRES_PASSWORD:-tws_dev_password}@postgres:5432/${POSTGRES_DB:-tws_ecommerce}
+      REDIS_URL: redis://redis:6379/0
+    command:
+      - sh
+      - -c
+      - while true; do python -m app.commands.sync_shipments || echo "shipment sync run failed" >&2; sleep 900; done
+
+volumes:
+  postgres_data:
+    name: tws_ec2_postgres_data
+  uploads_data:
+    name: tws_ec2_uploads_data
+  minio_data:
+    name: tws_ec2_minio_data

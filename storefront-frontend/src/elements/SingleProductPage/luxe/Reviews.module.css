@@ -1,0 +1,453 @@
+/*
+ * Product reviews -- same language as the product details panel
+ * (ProductDetails.module.css): 12px tracked uppercase labels, hairline
+ * borders, 44px black pill buttons, #c25151 for errors. Colours and type come
+ * from the CliQ tokens on Home.module.css's `.page`.
+ */
+
+.section {
+  border-top: 1px solid var(--line, #e7e2db);
+  padding: 56px 0 88px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 64px;
+  align-items: start;
+}
+
+.heading {
+  margin: 0 0 20px;
+  font-size: clamp(20px, 1.6vw, 24px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.hint {
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--muted);
+}
+
+/* --------------------------------- Stars --------------------------------- */
+
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--ink);
+}
+.stars svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* -------------------------------- Summary -------------------------------- */
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 24px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line, #e7e2db);
+}
+.average {
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--ink);
+}
+.summaryMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.bars {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  max-width: 240px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bar {
+  display: grid;
+  grid-template-columns: 14px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.barTrack {
+  height: 3px;
+  background: var(--line, #e7e2db);
+}
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+/* --------------------------------- List ---------------------------------- */
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.review {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line, #e7e2db);
+}
+.reviewHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.reviewer {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.date {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.reviewTitle {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.reviewText {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  white-space: pre-line;
+}
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.photoLink {
+  position: relative;
+  display: block;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  border: 1px solid var(--line, #e7e2db);
+  background: var(--card);
+}
+.photoLink img {
+  object-fit: cover;
+}
+.photoLink:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.deleteButton {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.empty {
+  margin: 0;
+  padding: 24px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* --------------------------------- Form ---------------------------------- */
+
+.formCard {
+  position: sticky;
+  top: 110px;
+  padding: 28px;
+  border: 1px solid #e3e3e3;
+  border-radius: 25px;
+  background: #fff;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.field {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.starPicker {
+  display: inline-flex;
+  gap: 6px;
+}
+.starButton {
+  display: inline-flex;
+  padding: 2px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.starButton svg {
+  width: 24px;
+  height: 24px;
+}
+.starButton:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.starButton:disabled {
+  cursor: default;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+.input {
+  border-radius: 999px;
+  padding: 0 20px;
+  height: 44px;
+}
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.input:disabled,
+.textarea:disabled {
+  background: var(--card);
+  color: var(--muted);
+}
+.invalid {
+  border-color: #c25151 !important;
+}
+.counter {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #c25151;
+}
+
+/* Photo picker */
+.photoGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.photoItem {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid var(--line, #e7e2db);
+  background: var(--card);
+}
+.photoItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photoUploading img {
+  opacity: 0.5;
+}
+.photoFailed {
+  border-color: #c25151;
+}
+.photoBadge {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 2px 4px;
+  background: rgb(255 255 255 / 92%);
+  font-size: 10px;
+  text-align: center;
+  color: var(--ink);
+}
+.photoFailed .photoBadge {
+  color: #c25151;
+}
+.removePhoto {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  color: var(--ink);
+  cursor: pointer;
+}
+.removePhoto:focus-visible {
+  outline: 2px solid var(--ink);
+}
+.addPhoto {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  width: 72px;
+  height: 72px;
+  border: 1px dashed #bdbdbd;
+  background: #fff;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+.addPhoto:focus-within,
+.addPhoto:hover {
+  border-color: var(--ink);
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.submit {
+  height: 44px;
+  padding: 0 22px;
+  border: 0.5px solid var(--ink);
+  border-radius: 45px;
+  background: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+.submit:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.submit:disabled {
+  border-color: #bdbdbd;
+  background: #bdbdbd;
+  cursor: not-allowed;
+}
+.submit:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #e7e2db);
+  border-left: 3px solid var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.noticeError {
+  border-left-color: #c25151;
+}
+
+.signIn {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+  .formCard {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: 40px 0 56px;
+  }
+  .formCard {
+    padding: 20px;
+    border-radius: 18px;
+  }
+  .summary {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .bars {
+    max-width: none;
+    flex-basis: 100%;
+  }
+}

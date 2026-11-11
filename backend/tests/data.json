@@ -1,0 +1,10 @@
+{
+  "domains": {
+    "zeen": "zeen.test",
+    "acme": "acme.test",
+    "unregistered": "unregistered.test"
+  },
+  "passwords": {
+    "admin": "test1234"
+  }
+}

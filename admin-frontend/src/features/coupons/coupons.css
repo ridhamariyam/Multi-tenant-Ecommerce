@@ -1,0 +1,8 @@
+.coupon-page .coupon-filters { align-items: center; gap: 7px; }
+.coupon-page .coupon-filters > :is(input, select, button) { min-width: 0; height: 40px; padding: 7px 10px; }
+.coupon-page .coupon-filters > input[type="search"] { flex: 1 1 190px; max-width: 290px; }
+.coupon-page .coupon-filters > select { flex: 0 1 155px; max-width: 170px; }
+.coupon-page .coupon-filters > .check { flex: 0 0 auto; min-width: 0; white-space: nowrap; font-size: 12px; }
+.coupon-page .coupon-filters > button { font-size: 12px; white-space: nowrap; }
+.coupon-page .coupon-code { padding: 0; font-size: 12px; font-weight: 700; }
+@media (max-width: 650px) { .coupon-page .coupon-filters > input[type="search"] { max-width: none; } .coupon-page .coupon-filters > select { flex: 1 1 130px; max-width: none; } }

@@ -1,0 +1,53 @@
+/* Minimal base layer for the storefront.
+   Replaces the base + theme-token layer the old template stylesheet
+   provided; all real styling lives in the luxe CSS modules. */
+
+/* Brand theme tokens consumed globally by the luxe design (header, footer,
+   buttons, contrast sections). Previously defined in the template's
+   global stylesheet. */
+:root {
+  --cliq-midnight-navy: #0D133C;
+  --cliq-champagne-gold: #F6E4CF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Montserrat, Helvetica, Arial, sans-serif;
+  color: #1a1714;
+  background: #fbfaf8;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Keeps the footer at the bottom on short pages (was supplied by the template). */
+.page-wraper {
+  min-height: 100vh;
+}

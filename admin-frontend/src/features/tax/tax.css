@@ -1,0 +1,35 @@
+.tax-page > .page-header { margin-bottom: 10px; }
+.tax-page > .panel, .tax-page .tax-settings-grid > .panel { margin-bottom: 10px; padding: 14px 16px; border-radius: 18px; }
+.tax-page .tax-settings-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 10px; align-items: start; }
+.tax-page .tax-settings-grid .form { gap: 9px; }
+.tax-page .tax-settings-grid .form-grid { gap: 8px 10px; }
+.tax-page .tax-settings-grid .field { min-width: 0; gap: 3px; }
+.tax-page .tax-settings-grid :is(input, textarea) { min-height: 36px; padding: 7px 9px; }
+.tax-page .tax-settings-grid textarea { min-height: 56px; }
+.tax-page .tax-settings-grid .form-actions { padding-top: 0; }
+.tax-page .tax-settings-grid .muted { margin: 0; font-size: 12px; line-height: 1.35; }
+.tax-page .panel h3 { margin-bottom: 7px; }
+.tax-page .tax-help { font-size: 12px; line-height: 1.35; margin: 0 0 8px; }
+.tax-page .tax-date-filters { gap: 8px; margin-bottom: 9px; }
+.tax-page .tax-date-filters .field { min-width: 0; max-width: 170px; }
+.tax-page .tax-date-filters input { min-height: 38px; padding: 6px 8px; }
+.tax-page .tax-stat-grid { gap: 8px; margin-bottom: 8px; }
+.tax-page .tax-stat-grid > * { padding: 10px 12px; }
+.tax-page .tax-classification-note { margin: 0 0 9px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--accent-soft); font-size: 12px; line-height: 1.4; }
+.tax-page .tax-invoices-panel .table-wrap { max-height: min(46dvh, 400px); overflow: auto; }
+.tax-page .tax-report-panel .table-wrap { max-height: min(32dvh, 240px); overflow: auto; }
+.tax-page :is(.tax-report-panel, .tax-invoices-panel) .table-wrap { overscroll-behavior: contain; }
+.tax-page .tax-report-panel th { position: sticky; top: 0; z-index: 1; }
+.tax-page .tax-invoices-panel th { position: sticky; top: 0; z-index: 1; }
+.tax-page .tax-invoices-panel :is(th, td) { padding: 7px 9px; }
+.tax-page .tax-activation { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; display: grid; gap: 8px; }
+.tax-page .tax-activation p { margin: 0; font-size: 12px; }
+.tax-page .tax-rates { display: grid; gap: 10px; }
+.tax-page .tax-rate-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.tax-page .tax-rate-form { align-items: end; }
+.tax-page .tax-rate-form button { align-self: end; min-height: 38px; }
+@media (max-width: 1000px) { .tax-page .tax-settings-grid { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .tax-page .tax-date-filters .field { flex: 1 1 130px; max-width: none; } }
+.tax-page .tax-defaults-panel, .tax-page .tax-review-panel { display: grid; gap: 8px; }
+.tax-page .tax-defaults-panel .table-wrap, .tax-page .tax-review-panel .table-wrap { max-height: min(40dvh, 320px); overflow: auto; overscroll-behavior: contain; }
+.tax-page .tax-review-panel .panel-title { flex-wrap: wrap; gap: 8px; }

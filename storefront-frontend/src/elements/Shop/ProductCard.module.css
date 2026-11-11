@@ -1,0 +1,128 @@
+.card {
+  --ink: #1a1714;
+  --ink-soft: #55504b;
+  --muted: #8b857e;
+  --line: #e7e2db;
+  --accent: #8f5a3c;
+  --card: #f4f1ec;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-family: Montserrat, Helvetica, sans-serif;
+  color: var(--ink);
+}
+.wishlist {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.wishlist:hover { transform: scale(1.06); }
+.wishlist.active { color: #b4453a; }
+.mediaLink { display: block; }
+.media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 4px;
+}
+.img { object-fit: cover; object-position: top center; transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+.card:hover .img { transform: scale(1.04); }
+.soldOut {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 2px;
+}
+.overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.card:hover .overlay { opacity: 1; transform: translateY(0); }
+.viewBtn {
+  background: rgba(255,255,255,0.95);
+  color: var(--ink);
+  border: none;
+  padding: 11px 22px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.body { padding: 14px 2px 0; }
+.name {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.price { font-size: 14px; font-weight: 600; margin: 0 0 10px; }
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rating { display: inline-flex; gap: 2px; color: var(--accent); }
+.starEmpty { color: var(--line); }
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.addBtn:hover { border-color: var(--accent); color: var(--accent); }
+.plus { font-size: 14px; line-height: 1; }
+
+/* On the two-column phone grid a card is ~160px wide: the rating and the
+   "Add to Cart" button no longer fit side by side, so stack the footer and
+   let the button take the full width. */
+@media (max-width: 520px) {
+  .body { padding-top: 12px; }
+  .name { font-size: 13px; }
+  .price { font-size: 13px; }
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .addBtn {
+    justify-content: center;
+    width: 100%;
+    padding: 9px 12px;
+  }
+}

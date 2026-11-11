@@ -1,0 +1,108 @@
+/* Shared editorial layout for the storefront's static info pages
+   (About, Contact, FAQ). Palette and type mirror the luxe home design. */
+.page {
+  --ink: #1a1714;
+  --ink-soft: #55504b;
+  --muted: #8b857e;
+  --line: #e7e2db;
+  --cream: #fbfaf8;
+  --accent: #8f5a3c;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Montserrat, Helvetica, sans-serif;
+}
+
+.wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: clamp(56px, 8vw, 120px) clamp(16px, 2.8vw, 40px) clamp(72px, 10vw, 160px);
+}
+
+.kicker {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+}
+
+.title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(34px, 6vw, 60px);
+  line-height: 1.05;
+  margin: 0 0 28px;
+}
+
+.lead {
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin: 0 0 24px;
+}
+
+.body p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  margin: 0 0 20px;
+}
+
+.sectionTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(22px, 3vw, 28px);
+  margin: 48px 0 16px;
+}
+
+.rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 40px 0;
+}
+
+/* Contact */
+.contactGrid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 40px;
+}
+.contactCard {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+  background: #fff;
+}
+.contactLabel {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.contactValue {
+  font-size: 17px;
+  margin: 0;
+}
+.contactValue a { color: var(--ink); text-decoration: none; }
+.contactValue a:hover { color: var(--accent); }
+
+/* FAQ */
+.faqItem {
+  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+}
+.faqItem:first-of-type { border-top: 1px solid var(--line); }
+.faqQ {
+  font-weight: 600;
+  font-size: 17px;
+  margin: 0 0 10px;
+}
+.faqA {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  margin: 0;
+}

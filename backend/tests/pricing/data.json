@@ -1,0 +1,45 @@
+{
+  "routes": {
+    "shipping": "/api/v1/admin/shipping",
+    "tax": "/api/v1/admin/tax",
+    "checkout": "/api/v1/checkout",
+    "orders": "/api/v1/orders",
+    "admin_orders": "/api/v1/admin/orders",
+    "admin_payments": "/api/v1/admin/payments",
+    "addresses": "/api/v1/addresses",
+    "cart": "/api/v1/cart"
+  },
+  "customers": {
+    "buyer": "+919844440001"
+  },
+  "shipping": {
+    "shipping_amount": "100.00",
+    "free_shipping_minimum": "2000.00",
+    "is_active": true
+  },
+  "tax": {
+    "tax_percentage": "18.00",
+    "is_active": true
+  },
+  "address": {
+    "full_name": "Priya Nair",
+    "phone": "+919876500003",
+    "address_line_1": "8 Church Street",
+    "address_line_2": null,
+    "city": "Kozhikode",
+    "state": "Kerala",
+    "postal_code": "673001",
+    "country": "India"
+  },
+  "variant": {
+    "sku": "TAX-SHIRT-WHT-M",
+    "name": "White / M",
+    "price": "1000.00",
+    "status": "ACTIVE",
+    "initial_quantity": 20,
+    "options": [
+      { "name": "Color", "value": "White" },
+      { "name": "Size", "value": "M" }
+    ]
+  }
+}

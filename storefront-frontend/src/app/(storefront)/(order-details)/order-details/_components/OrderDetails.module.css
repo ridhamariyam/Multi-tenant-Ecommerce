@@ -1,0 +1,793 @@
+/*
+ * Order details. Sections carry Home's `.container`, and colours and type
+ * come from the CliQ tokens on Home.module.css's `.page` (set by the
+ * storefront layout) -- nothing is redeclared here. Intro, buttons, cards
+ * and breakpoints follow the collection and product pages.
+ */
+
+.page {
+  background: var(--cream, #fbfaf8);
+}
+
+/* --------------------------------- Intro --------------------------------- */
+
+.intro {
+  padding-top: 36px;
+  padding-bottom: 8px;
+}
+
+.crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.crumb a:hover,
+.crumb [aria-current] {
+  color: var(--ink);
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.titleGroup {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* --------------------------------- Badges -------------------------------- */
+
+.badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badgeDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.toneAmber { background: #fbf3e6; color: #a8671e; }
+.toneBlue { background: #eaf1fb; color: #2f568a; }
+.toneGreen { background: #eaf3ec; color: #3f6a4d; }
+.toneRed { background: #fbeceb; color: #a02318; }
+.toneNeutral { background: var(--card); color: var(--ink-soft); }
+
+/* -------------------------------- Buttons -------------------------------- */
+
+.outlineButton,
+.solidButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 24px;
+  border-radius: 45px;
+  border: 0.5px solid var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.4s ease, background-color 0.4s ease, opacity 0.3s ease;
+}
+.outlineButton {
+  background: transparent;
+  color: var(--ink);
+}
+.outlineButton:hover:not(:disabled) {
+  background: var(--ink);
+  color: #fff;
+}
+.solidButton {
+  background: var(--ink);
+  color: #fff;
+}
+.solidButton:hover:not(:disabled) {
+  opacity: 0.85;
+  color: #fff;
+}
+.outlineButton:disabled,
+.solidButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.outlineButton:focus-visible,
+.solidButton:focus-visible,
+.history summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* --------------------------------- Layout -------------------------------- */
+
+.content {
+  padding-top: 28px;
+  padding-bottom: 96px;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  align-items: start;
+  gap: 20px;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.rightColumn {
+  position: sticky;
+  top: 110px;
+  min-width: 0;
+}
+
+.infoGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+}
+.card > .outlineButton {
+  align-self: flex-start;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.cardTitleCount {
+  color: var(--muted);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------- Items --------------------------------- */
+
+.itemList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itemRow {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 0;
+}
+.itemRow:first-child {
+  padding-top: 0;
+}
+.itemRow:last-child {
+  padding-bottom: 0;
+}
+.itemRow + .itemRow {
+  border-top: 1px solid var(--line);
+}
+
+.itemImage {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--card);
+}
+.itemImg {
+  object-fit: cover;
+  object-position: top center;
+}
+.itemImageEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.itemName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.itemName a {
+  color: inherit;
+  text-decoration: none;
+}
+.itemName a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.itemMeta,
+.itemQty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.itemPrice {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.itemDiscount {
+  margin: 0;
+  font-size: 12px;
+  color: var(--terracotta);
+}
+
+.itemAction .outlineButton {
+  height: 40px;
+  padding: 0 20px;
+}
+
+.itemUnavailable {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* -------------------------------- Timeline ------------------------------- */
+
+.timeline {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: center;
+}
+
+/* Connector to the previous step; solid once this step has been reached. */
+.step + .step::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: 50%;
+  width: 100%;
+  height: 1px;
+  background: var(--line);
+}
+.step_done + .step::before,
+.step_done + .step_current::before {
+  background: var(--ink);
+}
+
+.stepIcon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: #fff;
+}
+.step_done .stepIcon,
+.step_current .stepIcon {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+.step_current .stepIcon {
+  box-shadow: 0 0 0 4px var(--card);
+}
+.step_stopped .stepIcon {
+  border-color: #a02318;
+  background: #a02318;
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 4px;
+}
+
+.stepLabel {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.step_done .stepLabel,
+.step_current .stepLabel {
+  color: var(--ink);
+}
+.step_current .stepLabel,
+.step_stopped .stepLabel {
+  font-weight: 600;
+}
+.step_stopped .stepLabel {
+  color: #a02318;
+}
+
+.stepNote {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.stepDate {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.shipmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.shipmentGrid dt,
+.paymentGrid dt {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.shipmentGrid dd,
+.paymentGrid dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.history {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.history summary {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+.history ol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.history time {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+.historyText {
+  min-width: 0;
+}
+.historyLocation {
+  color: var(--muted);
+}
+
+/* -------------------------------- Summary -------------------------------- */
+
+.summary {
+  margin: 0;
+}
+
+.summaryRow,
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.summaryRow {
+  padding: 7px 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.summaryRow dt,
+.summaryRow dd,
+.summaryTotal dt,
+.summaryTotal dd {
+  margin: 0;
+}
+.summaryRow dd {
+  color: var(--ink);
+  text-align: right;
+}
+
+.discountValue {
+  color: var(--terracotta) !important;
+}
+
+.summaryTotal {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.summaryNote {
+  font-size: 12.5px;
+}
+
+/* ------------------------------ Info cards ------------------------------- */
+
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.address strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.paymentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  margin: 0;
+}
+.paymentWide {
+  grid-column: 1 / -1;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.paymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+.paymentList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.backRow {
+  padding-top: 32px;
+}
+
+/* ---------------------------- Load error state ---------------------------- */
+
+.loadError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 96px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+.loadError p {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.loadErrorTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* --------------------------------- Cancel -------------------------------- */
+
+.cancelOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(17 17 17 / 45%);
+}
+
+.cancelModal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(440px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 32px 28px 28px;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.cancelClose {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.cancelClose:hover {
+  background: var(--card);
+}
+
+.cancelTitle {
+  margin: 0;
+  padding-right: 32px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.cancelSubtitle {
+  margin: -8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cancelItems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--card);
+  list-style: none;
+}
+.cancelItems li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.cancelItems small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cancelActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ------------------------------- Breakpoints ------------------------------- */
+
+@media (max-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rightColumn {
+    position: static;
+  }
+  .infoGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 749px) {
+  .intro {
+    padding-top: 24px;
+  }
+  .content {
+    padding-top: 20px;
+    padding-bottom: 112px; /* clears the fixed mobile bottom nav */
+  }
+  .headerRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .headerRight {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+  .headerActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .infoGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+  .itemRow {
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+  }
+  .itemAction {
+    grid-column: 2;
+  }
+  .itemAction .outlineButton {
+    width: 100%;
+    height: 44px;
+  }
+
+  /* A vertical timeline: five labels do not fit side by side on a phone. */
+  .timeline {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .step {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    text-align: left;
+  }
+  .step + .step::before {
+    top: auto;
+    bottom: 100%;
+    left: 13.5px;
+    right: auto;
+    width: 1px;
+    height: 18px;
+  }
+  .stepText {
+    padding: 4px 0 0;
+  }
+  .card > .outlineButton,
+  .backRow .outlineButton {
+    width: 100%;
+  }
+  .history li {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .paymentGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* -------------------------------- Loading -------------------------------- */
+
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--card) 25%, var(--card-deep, #efe9e1) 50%, var(--card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

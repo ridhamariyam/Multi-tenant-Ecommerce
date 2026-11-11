@@ -1,0 +1,17 @@
+.payments-page .payment-summaries { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.payments-page .payment-summary { min-width: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); display: flex; flex-direction: column; gap: 2px; }
+.payments-page .payment-summary > span { color: var(--muted); font-size: 11px; line-height: 1.2; }
+.payments-page .payment-summary strong { color: var(--text); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.payments-page .payment-summary small { color: var(--muted); font-size: 10px; line-height: 1.15; }
+.payments-page .payment-filters { gap: 7px; margin-bottom: 9px; }
+.payments-page .payment-filters > :is(input, select, button) { flex: 0 1 auto; min-width: 0; height: 40px; padding: 7px 10px; }
+.payments-page .payment-filters > input[type="search"] { flex: 1 1 170px; min-width: 150px; max-width: 260px; }
+.payments-page .payment-filters > select { flex: 0 1 135px; width: auto; min-width: 120px; max-width: 155px; }
+.payments-page .payment-filters > button { font-size: 12px; white-space: nowrap; }
+.payments-page .payment-date { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.payments-page .payment-date input { width: 129px; min-width: 0; height: 40px; padding: 6px 7px; font-size: 12px; }
+.payments-page .payment-table-panel .payment-id { max-width: none; padding: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.payment-details { column-gap: 12px; }
+.payment-details dd { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .payments-page .payment-summaries { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .payments-page .payment-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); } .payments-page .payment-filters > input[type="search"] { max-width: none; } .payments-page .payment-filters > select { flex: 1 1 130px; max-width: none; } }

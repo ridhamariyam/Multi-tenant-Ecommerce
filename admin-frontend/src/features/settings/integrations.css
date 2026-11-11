@@ -1,0 +1,13 @@
+.integrations-page > .page-header { margin-bottom: 8px; }
+.integrations-page .integrations-intro { margin: 0 0 10px; font-size: 12px; line-height: 1.35; }
+.integrations-page .integrations-table-panel { padding: 10px 12px; margin-bottom: 10px; border-radius: 18px; }
+.integrations-page .table-wrap { max-height: min(68dvh, 570px); overflow: auto; overscroll-behavior: contain; }
+.integrations-page th { position: sticky; top: 0; z-index: 1; }
+.integrations-page :is(th, td) { padding: 9px 11px; }
+.integrations-page td { line-height: 1.4; }
+.integrations-page td:first-child { white-space: nowrap; }
+.integrations-page .integrations-technical { margin-top: 5px; font-size: 12px; color: var(--muted); }
+.integrations-page .integrations-technical summary { color: var(--accent); cursor: pointer; width: fit-content; }
+.integrations-page .integrations-technical p { margin: 5px 0 0; }
+.integrations-page .integrations-technical code { overflow-wrap: anywhere; }
+@media (max-width: 700px) { .integrations-page td:first-child { white-space: normal; } }

@@ -1,0 +1,42 @@
+{
+  "routes": {
+    "gst": "/api/v1/admin/gst",
+    "checkout": "/api/v1/checkout",
+    "addresses": "/api/v1/addresses",
+    "cart": "/api/v1/cart",
+    "storefront_tax": "/api/v1/storefront/tax"
+  },
+  "customers": {
+    "buyer": "+919844440011"
+  },
+  "gst": {
+    "gstin": null,
+    "legal_name": null,
+    "address": null,
+    "state": null,
+    "invoice_prefix": "INV-",
+    "shipping_sac_code": null,
+    "registration_status": "UNKNOWN",
+    "accounting_software": "NOT_DECIDED",
+    "prices_include_gst": false,
+    "gst_enabled": true,
+    "default_classification": "APPAREL",
+    "fallback_gst_rate": null
+  },
+  "address": {
+    "full_name": "Anjali Menon",
+    "phone": "+919876500011",
+    "address_line_1": "12 Beach Road",
+    "address_line_2": null,
+    "city": "Kozhikode",
+    "state": "Kerala",
+    "postal_code": "673001",
+    "country": "India"
+  },
+  "variant": {
+    "name": "Free size",
+    "status": "ACTIVE",
+    "initial_quantity": 20,
+    "options": [{ "name": "Size", "value": "Free" }]
+  }
+}

@@ -1,0 +1,68 @@
+/* Dashboard-only layout; the Admin shell and other pages keep their styles. */
+.cliq-dashboard { margin-top: -12px; min-width: 0; }
+.cliq-dashboard .panel { padding: 14px 16px; margin-bottom: 10px; border-radius: 18px; }
+.cliq-dashboard .panel-title { margin-bottom: 8px; }
+.cliq-dashboard .panel-title h3, .cliq-dashboard h3 { margin: 0; font-size: 15px; }
+.cliq-dashboard .stat-grid { gap: 10px; margin-bottom: 10px; }
+.cliq-dashboard .stat-card { min-width: 0; padding: 12px 14px; gap: 4px; border-radius: 14px; }
+.cliq-dashboard .stat-value { font-size: 23px; line-height: 1.15; }
+.cliq-dashboard .stat-hint { font-size: 11px; line-height: 1.3; }
+.cliq-dashboard .state { padding: 14px 0; }
+.dashboard-top { display: flex; justify-content: space-between; align-items: end; gap: 16px; }
+.dashboard-top .page-header { margin: 0; }
+.dashboard-top .page-header h2 { font-size: 24px; }
+.dashboard-top .page-header p { margin: 2px 0 0; font-size: 12px; }
+.dashboard-period { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12px; color: var(--muted); }
+.dashboard-period-control { max-width: 245px; }
+.dashboard-period select { width: 152px; min-height: 36px; padding: 6px 10px; font-size: 12px; }
+.dashboard-tabs { margin: 10px 0; padding: 4px; border-radius: 14px; gap: 4px; }
+.dashboard-tabs button { padding: 7px 12px; font-size: 12px; }
+.dashboard-tabs button:focus-visible, .cliq-dashboard a:focus-visible, .dashboard-period select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dashboard-overview-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dashboard-overview-kpis .stat-card { min-height: 84px; }
+.dashboard-metric-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.dashboard-metric-link:hover, .dashboard-inventory-health .inventory-metric-link:hover { background: var(--accent-soft); }
+.dashboard-overview-revenue .panel-title { align-items: center; }
+.dashboard-overview-revenue .muted { font-size: 11px; }
+.dashboard-line-chart { margin: 0; min-width: 0; }
+.dashboard-line-chart figcaption { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.dashboard-line-chart svg { width: 100%; height: 168px; display: block; }
+.dashboard-line-chart text { fill: var(--muted); font-size: 11px; }
+.dashboard-line-chart .trend-axis { stroke: var(--line); stroke-width: 1.5; }
+.dashboard-line-chart .trend-line { stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.dashboard-line-chart .trend-point { fill: var(--accent); }
+.dashboard-chart-empty { display: grid; place-items: center; height: 160px; color: var(--muted); font-size: 12px; }
+.dashboard-products ol, .dashboard-recent-orders ul, .dashboard-restock ul { list-style: none; margin: 0; padding: 0; }
+.dashboard-products li, .dashboard-recent-orders li, .dashboard-restock li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; }
+.dashboard-products li:first-child, .dashboard-recent-orders li:first-child, .dashboard-restock li:first-child { border-top: 0; }
+.dashboard-products li > span, .dashboard-recent-orders li > span { min-width: 0; }
+.dashboard-products li small, .dashboard-recent-orders li small { display: block; color: var(--muted); font-size: 11px; }
+.dashboard-products li strong { flex-shrink: 0; font-size: 12px; }
+.dashboard-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.dashboard-section-heading p { margin: 1px 0 0; font-size: 11px; }
+.dashboard-performance-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dashboard-performance-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dashboard-order-operations .dashboard-pipeline { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
+.dashboard-recent-orders .badge { flex-shrink: 0; }
+.dashboard-inventory-health .dashboard-stock-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dashboard-inventory-health .inventory-metric-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.dashboard-restock h4 { margin: 8px 0 4px; font-size: 12px; }
+.dashboard-restock li > span:last-child { color: var(--muted); white-space: nowrap; }
+@media (max-width: 900px) {
+  .dashboard-overview-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-performance-charts { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .dashboard-top { align-items: start; flex-direction: column; gap: 8px; }
+  .dashboard-top .page-header h2 { font-size: 21px; }
+  .dashboard-period { width: 100%; justify-content: space-between; }
+  .dashboard-tabs { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-tabs button { white-space: normal; padding: 7px 8px; }
+  .dashboard-overview-kpis, .dashboard-performance-kpis, .dashboard-order-operations .dashboard-pipeline, .dashboard-inventory-health .dashboard-stock-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-overview-kpis .stat-card { min-height: 84px; }
+  .cliq-dashboard .stat-value { font-size: 20px; }
+  .dashboard-line-chart svg { height: 150px; }
+}
+@media (max-width: 380px) {
+  .dashboard-overview-kpis, .dashboard-performance-kpis, .dashboard-order-operations .dashboard-pipeline, .dashboard-inventory-health .dashboard-stock-counts { grid-template-columns: 1fr; }
+}

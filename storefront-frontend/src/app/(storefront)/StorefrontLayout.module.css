@@ -1,0 +1,22 @@
+:global(html):has(.shell):not(:has([data-editorial-home])),
+:global(body):has(.shell):not(:has([data-editorial-home])) {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background-color: var(--cliq-ivory, #fbf7f0);
+  overscroll-behavior-y: none;
+}
+
+:global(.page-wraper).shell:not(:has([data-editorial-home])) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--cliq-ivory, #fbf7f0);
+}
+
+:global(.page-wraper).shell:not(:has([data-editorial-home])) .content {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+

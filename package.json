@@ -1,0 +1,13 @@
+{
+  "name": "cliq",
+  "private": true,
+  "scripts": {
+    "dev:storefront": "npm --prefix storefront-frontend install --legacy-peer-deps && npm --prefix storefront-frontend run dev",
+    "dev:admin": "npm --prefix admin-frontend install && npm --prefix admin-frontend run dev",
+    "dev:all": "npx concurrently -n storefront,admin -c green,cyan \"npm run dev:storefront\" \"npm run dev:admin\"",
+    "dev:api": "make dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

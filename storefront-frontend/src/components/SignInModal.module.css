@@ -1,0 +1,267 @@
+/* CliQ sign-in, opened over any storefront page. */
+.overlay {
+  --navy: var(--cliq-midnight-navy);
+  --champagne: var(--cliq-champagne-gold);
+  --muted: #74798a;
+  --border: #C8CCD5;
+  --danger: #8b2929;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgb(13 19 60 / 42%);
+  backdrop-filter: blur(4px);
+  color: var(--navy);
+  font-family: Montserrat, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  animation: fadeIn .2s ease;
+}
+.overlay *, .overlay *::before, .overlay *::after { box-sizing: border-box; }
+
+.modal {
+  position: relative;
+  width: min(100%, 1080px);
+  min-height: min(640px, calc(100dvh - 48px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  overflow: hidden;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 72px rgb(13 19 60 / 22%);
+  animation: rise .24s ease;
+}
+
+.close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--navy);
+  cursor: pointer;
+  transition: background-color .18s ease;
+}
+.close:hover { background: rgb(13 19 60 / 6%); }
+.close:focus-visible { outline: 3px solid rgb(13 19 60 / 35%); outline-offset: 2px; }
+
+.brandPanel {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--cliq-midnight-navy);
+}
+.brandPanel::before,
+.brandPanel::after {
+  position: absolute;
+  z-index: -1;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 48% 52% 61% 39%;
+  background: rgb(13 19 60 / 5%);
+  content: '';
+  filter: blur(38px);
+  pointer-events: none;
+}
+.brandPanel::before { top: -24%; left: -20%; transform: rotate(32deg); }
+.brandPanel::after { right: -20%; bottom: -25%; transform: rotate(-24deg); }
+.brandLockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.brandSymbol {
+  display: block;
+  width: 116px;
+  aspect-ratio: 2082 / 1836;
+  background: var(--cliq-champagne-gold);
+  display: none !important; /* CliQ. uses the wordmark alone */
+  -webkit-mask: url('/images/cliq-symbol.svg') center / contain no-repeat;
+  mask: url('/images/cliq-symbol.svg') center / contain no-repeat;
+}
+.brandWordmark {
+  display: block;
+  width: 196px;
+  aspect-ratio: 4423 / 1893;
+  background: var(--cliq-champagne-gold);
+  -webkit-mask: url('/images/cliq-wordmark.svg') center / contain no-repeat;
+  mask: url('/images/cliq-wordmark.svg') center / contain no-repeat;
+}
+
+.formPanel {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px clamp(32px, 5vw, 64px) 44px;
+  background: #fff;
+}
+.formInner { width: 100%; max-width: 400px; margin: auto; }
+.title {
+  margin: 0 0 28px;
+  color: var(--navy);
+  font-family: Montserrat, Helvetica, sans-serif;
+  font-size: clamp(44px, 4.4vw, 56px);
+  font-weight: 400;
+  letter-spacing: -.045em;
+  line-height: 1.05;
+}
+.fields { display: flex; flex-direction: column; gap: 22px; }
+.fieldGroup { min-width: 0; }
+.label {
+  display: block;
+  margin: 0 0 9px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.input {
+  display: block;
+  width: 100%;
+  height: 56px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: var(--navy);
+  font: 400 15px 'Montserrat', sans-serif;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.input::placeholder { color: var(--muted); opacity: .8; }
+.input:focus-visible {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgb(13 19 60 / 9%);
+}
+.input[aria-invalid='true'] { border-color: var(--danger); }
+.error { margin: 8px 0 0; color: var(--danger); font-size: 12px; line-height: 1.5; }
+
+.continue {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--navy);
+  border-radius: 10px;
+  background: var(--navy);
+  color: #fff;
+  font: 500 17px 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.continue:hover:not(:disabled) { opacity: .91; transform: translateY(-1px); }
+.continue:focus-visible,
+.resend button:focus-visible { outline: 3px solid rgb(13 19 60 / 35%); outline-offset: 3px; }
+.continue:disabled { opacity: .55; cursor: not-allowed; }
+
+.divider {
+  margin: 28px 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.divider::before,
+.divider::after { height: 1px; flex: 1; background: #E2E4E9; content: ''; }
+.googleButton {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.googleButton > div { width: 100%; display: flex; justify-content: center; }
+
+.note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+.verifyIntro {
+  margin: -12px 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.resend {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.resend button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+
+@media (max-width: 860px) {
+  .modal { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+  .brandSymbol { width: 92px; }
+  .brandWordmark { width: 160px; }
+}
+
+@media (max-width: 650px) {
+  .overlay { padding: 12px; align-items: start; }
+  .modal {
+    min-height: 0;
+    margin: auto 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 120px auto;
+    border-radius: 18px;
+  }
+  .close { top: 10px; right: 10px; }
+  .brandLockup { gap: 5px; }
+  .brandSymbol { width: 62px; }
+  .brandWordmark { width: 132px; }
+  .formPanel { padding: 24px 20px 28px; align-items: flex-start; }
+  .title { margin-bottom: 20px; font-size: 40px; }
+  .label { margin-bottom: 8px; font-size: 13px; }
+  .input { height: 52px; padding: 0 16px; }
+  .fields { gap: 16px; }
+  .continue { min-height: 52px; font-size: 16px; }
+  .divider { margin: 22px 0 14px; font-size: 10px; }
+  .note { font-size: 11px; }
+  .verifyIntro { margin: -8px 0 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .modal { animation: none; }
+  .input, .continue, .close { transition: none; }
+}

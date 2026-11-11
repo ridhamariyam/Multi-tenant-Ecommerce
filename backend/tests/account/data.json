@@ -1,0 +1,28 @@
+{
+  "routes": {
+    "me": "/api/v1/auth/me",
+    "cart": "/api/v1/cart",
+    "wishlist": "/api/v1/wishlist",
+    "addresses": "/api/v1/addresses",
+    "checkout": "/api/v1/checkout",
+    "search": "/api/v1/storefront/search-products",
+    "products": "/api/v1/catalogue/products"
+  },
+  "address": {
+    "full_name": "Erasure Tester",
+    "phone": "+919876500321",
+    "address_line_1": "12 Erasure Lane",
+    "city": "Kochi",
+    "state": "Kerala",
+    "postal_code": "682001",
+    "country": "IN"
+  },
+  "variant": {
+    "sku": "ERA-SKU-1",
+    "name": "Standard Variant",
+    "price": "999.00",
+    "status": "ACTIVE",
+    "initial_quantity": 10,
+    "options": [{ "name": "Size", "value": "M" }]
+  }
+}

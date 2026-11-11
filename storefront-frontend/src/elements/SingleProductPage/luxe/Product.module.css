@@ -1,0 +1,447 @@
+/*
+ * Product Detail page -- extends the CliQ design system defined in
+ * Home.module.css (imported alongside this file for its tokens, header,
+ * footer, container, eyebrow/h2 and product-grid/card classes; Listing's
+ * banner/crumb and card-image classes are reused too, same pattern Listing
+ * itself uses on top of Home). This file only adds what's specific to the
+ * detail view: gallery, option pickers, quantity/cart row and reviews.
+ */
+
+.crumbBar {
+  border-bottom: 1px solid var(--line, #e7e2db);
+  padding: 20px 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  padding: 56px 0 40px;
+}
+
+/* ---------------------------------- Gallery ---------------------------------- */
+
+/*
+ * Width-driven by default (fills its grid column, height follows via
+ * aspect-ratio) -- safe at any column width, tablet included, and never
+ * overlaps the info column next to it.
+ *
+ * Desktop (>1080px, see media query below) switches to height-driven
+ * sizing instead: at that width the column itself is wide enough that a
+ * 3:4 box filling it runs taller than a laptop viewport once the
+ * header/breadcrumb are subtracted, forcing a scroll just to see the rest
+ * of the photo. Capping height there and letting width follow keeps the
+ * whole image on screen without needing to scroll.
+ */
+.gallery {
+  min-width: 0;
+}
+
+.galleryMain {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-lg, 24px);
+  background: var(--card, #f4f1ec);
+  overflow: hidden;
+}
+
+@media (min-width: 1081px) {
+  .gallery {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .galleryMain {
+    width: auto;
+    max-width: 100%;
+    height: min(68vh, 640px);
+  }
+}
+.galleryMainImg {
+  object-fit: cover;
+  object-position: top center;
+}
+.galleryMainEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted, #8b857e);
+  font-size: 14px;
+}
+
+.thumbRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.thumbRow::-webkit-scrollbar {
+  display: none;
+}
+.thumb {
+  position: relative;
+  flex: none;
+  width: 76px;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm, 10px);
+  overflow: hidden;
+  background: var(--card, #f4f1ec);
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.thumbImg {
+  object-fit: cover;
+  object-position: top center;
+}
+.thumbActive {
+  border-color: var(--ink, #1a1714);
+}
+
+/* ---------------------------------- Info ---------------------------------- */
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.category {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rust, #a9714a);
+  margin: 0 0 10px;
+}
+
+.title {
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+  color: var(--ink, #1a1714);
+}
+
+.price {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0 0 20px;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.stars :global(.filled) {
+  color: var(--terracotta, #8f5a3c);
+}
+.stars :global(.fa-regular) {
+  color: var(--line, #e7e2db);
+}
+
+.optionGroup {
+  margin-bottom: 22px;
+}
+.optionLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #8b857e);
+  margin-bottom: 10px;
+}
+
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid var(--line, #e7e2db);
+  cursor: pointer;
+  padding: 0;
+}
+.swatchActive {
+  border-color: var(--ink, #1a1714);
+  outline: 2px solid #fff;
+  outline-offset: -6px;
+}
+
+.chip {
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--line, #e7e2db);
+  background: #fff;
+  color: var(--ink-soft, #55504b);
+  cursor: pointer;
+}
+.chipActive {
+  background: var(--ink, #1a1714);
+  border-color: var(--ink, #1a1714);
+  color: #fff;
+}
+
+.stockRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 24px;
+}
+.stockDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #3a8a4b;
+}
+.stockDotOut {
+  background: #b23b3b;
+}
+.stockIn {
+  color: #3a8a4b;
+}
+.stockOut {
+  color: #b23b3b;
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 18px;
+  flex-wrap: wrap;
+}
+
+.qtyStepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line, #e7e2db);
+  border-radius: 999px;
+  height: 48px;
+  flex: none;
+}
+.qtyBtn {
+  width: 44px;
+  height: 100%;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--ink, #1a1714);
+}
+.qtyBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.qtyValue {
+  width: 32px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+}
+
+.addToCartBtn {
+  flex: 1;
+  min-width: 200px;
+  height: 48px;
+  border-radius: 999px;
+  border: none;
+  background: var(--ink, #1a1714);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+.addToCartBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.message {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rust, #a9714a);
+  margin: 0 0 20px;
+}
+
+.descriptionBlock {
+  border-top: 1px solid var(--line, #e7e2db);
+  padding-top: 24px;
+  margin-top: 8px;
+}
+.descriptionHeading {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #8b857e);
+  margin: 0 0 12px;
+}
+.descriptionText {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-soft, #55504b);
+  margin: 0;
+}
+
+/* ---------------------------------- Reviews ---------------------------------- */
+
+.reviewsSection {
+  border-top: 1px solid var(--line, #e7e2db);
+  padding: 56px 0 88px;
+}
+.reviewsHeading {
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 500;
+  margin: 0 0 24px;
+  color: var(--ink, #1a1714);
+}
+.reviewsSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: var(--ink-soft, #55504b);
+}
+.reviewsEmpty {
+  font-size: 14px;
+  color: var(--muted, #8b857e);
+  margin-bottom: 32px;
+}
+.reviewRow {
+  border-bottom: 1px solid var(--line, #e7e2db);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+.reviewMeta {
+  font-size: 12px;
+  color: var(--muted, #8b857e);
+  margin: 6px 0 8px;
+}
+.verifiedBadge {
+  color: var(--rust, #a9714a);
+  font-weight: 700;
+  margin-left: 10px;
+}
+.reviewTitle {
+  font-weight: 600;
+  margin: 6px 0 4px;
+  color: var(--ink, #1a1714);
+}
+.reviewComment {
+  margin: 0 0 4px;
+  color: var(--ink-soft, #55504b);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.deleteLink {
+  border: none;
+  background: none;
+  text-decoration: underline;
+  color: var(--muted, #8b857e);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.reviewForm {
+  max-width: 520px;
+  margin-top: 8px;
+}
+.formField {
+  margin-bottom: 16px;
+}
+.formField p {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0 0 10px;
+}
+.formInput,
+.formTextarea {
+  width: 100%;
+  border: 1px solid var(--line, #e7e2db);
+  border-radius: var(--radius-sm, 10px);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink, #1a1714);
+  background: #fff;
+}
+.formTextarea {
+  resize: vertical;
+}
+.starPicker {
+  display: inline-flex;
+  gap: 4px;
+  cursor: pointer;
+}
+.starPicker :global(i) {
+  font-size: 20px;
+}
+.signInPrompt {
+  font-size: 14px;
+  color: var(--ink-soft, #55504b);
+}
+.signInLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink, #1a1714);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.relatedSection {
+  padding: 20px 0 88px;
+  border-top: 1px solid var(--line, #e7e2db);
+}
+
+@media (max-width: 1080px) {
+  .layout {
+    gap: 40px;
+  }
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 32px 0 24px;
+  }
+  .actionsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .addToCartBtn {
+    width: 100%;
+  }
+  .reviewsSection {
+    padding: 40px 0 56px;
+  }
+}

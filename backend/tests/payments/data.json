@@ -1,0 +1,43 @@
+{
+  "routes": {
+    "payments": "/api/v1/payments",
+    "admin_payments": "/api/v1/admin/payments",
+    "admin_orders": "/api/v1/admin/orders",
+    "addresses": "/api/v1/addresses",
+    "checkout": "/api/v1/checkout",
+    "cart": "/api/v1/cart",
+    "orders": "/api/v1/orders"
+  },
+  "customers": {
+    "payer": "+919833330001",
+    "intruder": "+919833330002",
+    "tenant_b": "+919833330004"
+  },
+  "address": {
+    "full_name": "Arjun Menon",
+    "phone": "+919876500002",
+    "address_line_1": "44 Marine Drive",
+    "address_line_2": "Apartment 9",
+    "city": "Kochi",
+    "state": "Kerala",
+    "postal_code": "682031",
+    "country": "India"
+  },
+  "variant": {
+    "sku": "PAY-KRT-BLU-L",
+    "name": "Blue / L",
+    "price": "999.00",
+    "status": "ACTIVE",
+    "initial_quantity": 10,
+    "options": [
+      {
+        "name": "Color",
+        "value": "Blue"
+      },
+      {
+        "name": "Size",
+        "value": "L"
+      }
+    ]
+  }
+}

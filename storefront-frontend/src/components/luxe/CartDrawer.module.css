@@ -1,0 +1,508 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgb(17 19 28 / 52%);
+  opacity: 0;
+  transition: opacity 280ms ease;
+  cursor: default;
+}
+
+.open .overlay {
+  opacity: 1;
+}
+
+.drawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: min(42vw, 620px);
+  min-width: 420px;
+  height: 100%;
+  background: #fff;
+  color: #1a1714;
+  font-family: Montserrat, Helvetica, sans-serif;
+  box-shadow: -12px 0 36px rgb(0 0 0 / 10%);
+  transform: translateX(102%);
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  outline: none;
+}
+
+.open .drawer {
+  transform: translateX(0);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: none;
+  min-height: 78px;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid #e7e2db;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.heading span {
+  color: #77736e;
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.close,
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.close:hover,
+.remove:hover:not(:disabled) {
+  color: #77736e;
+}
+
+.close:focus-visible,
+.remove:focus-visible,
+.quantity button:focus-visible,
+.actions a:focus-visible,
+.recommendation:focus-visible {
+  outline: 2px solid #0d133c;
+  outline-offset: 3px;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bcb8b2 transparent;
+}
+
+.items {
+  padding: 0 28px;
+}
+
+.item {
+  display: flex;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid #eeeae5;
+}
+
+.itemImage,
+.recommendationImage {
+  position: relative;
+  display: block;
+  flex: none;
+  overflow: hidden;
+  background: #f4f1ec;
+}
+
+.itemImage {
+  width: 78px;
+  aspect-ratio: 4 / 5;
+}
+
+.itemImage img,
+.recommendationImage img {
+  object-fit: cover;
+  object-position: top center;
+}
+
+.noImage {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #8b857e;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.itemInfo {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.itemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.itemName {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.itemName:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.remove {
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px 0 0;
+}
+
+.remove:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.itemVariant {
+  margin: 0;
+  color: #77736e;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.priceLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.priceLine s {
+  color: #8b857e;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.salePrice {
+  color: #8f5a3c;
+}
+
+.lineSubtotal {
+  margin-left: auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.itemBottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.quantity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 104px;
+  height: 32px;
+  border: 1px solid #e7e2db;
+  border-radius: 5px;
+}
+
+.quantity button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.quantity button:disabled {
+  color: #bcb8b2;
+  cursor: default;
+}
+
+.quantity span {
+  min-width: 20px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.stockNote {
+  color: #8f5a3c;
+  font-size: 10px;
+}
+
+.recommendations {
+  padding: 20px 28px 24px;
+}
+
+.recommendations h3 {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.recommendationList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recommendation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #eeeae5;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease;
+}
+
+.recommendation:hover {
+  border-color: #bcb8b2;
+}
+
+.recommendationImage {
+  width: 56px;
+  height: 70px;
+}
+
+.recommendationCopy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recommendationName {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recommendationPrice {
+  color: #77736e;
+  font-size: 10px;
+}
+
+.recommendationArrow {
+  flex: none;
+  align-self: flex-start;
+  color: #77736e;
+  font-size: 14px;
+}
+
+.empty {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px;
+  text-align: center;
+}
+
+.empty p {
+  margin: 0;
+  color: #55504b;
+  font-size: 14px;
+}
+
+.error {
+  margin: 16px 28px 0;
+  padding: 11px 13px;
+  border: 1px solid #eed1cb;
+  background: #fff7f5;
+  color: #9b3d31;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.footer {
+  flex: none;
+  padding: 18px 28px max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid #e7e2db;
+  background: #fff;
+  box-shadow: 0 -6px 20px rgb(0 0 0 / 3%);
+}
+
+.subtotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.subtotal span {
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.subtotal strong {
+  font-size: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.shippingNote {
+  margin: 4px 0 16px;
+  color: #77736e;
+  font-size: 11px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.viewCart,
+.checkout,
+.secondaryButton {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid #171717;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.viewCart,
+.secondaryButton {
+  background: #fff;
+  color: #171717;
+}
+
+.checkout {
+  background: #171717;
+  color: #fff;
+}
+
+.viewCart:hover,
+.secondaryButton:hover {
+  background: #f4f1ec;
+}
+
+.checkout:hover {
+  background: #0d133c;
+  border-color: #0d133c;
+}
+
+.checkout[aria-disabled='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .drawer {
+    width: min(100vw, 560px);
+    min-width: 0;
+  }
+
+  .header {
+    min-height: 70px;
+    padding: 16px 18px 13px;
+  }
+
+  .heading h2 {
+    font-size: 22px;
+  }
+
+  .items {
+    padding: 0 18px;
+  }
+
+  .recommendations {
+    padding: 18px;
+  }
+
+  .footer {
+    padding: 16px 18px max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 380px) {
+  .itemImage {
+    width: 68px;
+  }
+
+  .recommendationList {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .drawer {
+    transition-duration: 0.01ms;
+  }
+}

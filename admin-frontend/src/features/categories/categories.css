@@ -1,0 +1,25 @@
+.categories-page .category-filters { margin: 0 0 10px; gap: 8px; }
+.categories-page .category-filters input { width: min(280px, 100%); }
+.categories-page .category-filters select { width: min(170px, 100%); }
+.categories-page .category-table-panel { height: min(430px, 60dvh); }
+.categories-page .category-table-panel :is(th, td) { padding: 8px 10px; }
+.categories-page .category-list-id { display: block; max-width: 155px; overflow-wrap: anywhere; font-size: 11px; line-height: 1.25; color: var(--muted); }
+.categories-page .category-table-panel .category-name { display: inline-block; font-weight: 600; }
+.categories-page > .tabs { margin-bottom: 12px; }
+.attribute-values-panel { padding: 16px; }
+.attribute-values-panel > .muted { margin: 0 0 12px; font-size: 12px; }
+.attribute-values-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
+.attribute-values-card { display: flex; flex-direction: column; min-width: 0; max-height: 320px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.attribute-values-card h4 { flex: 0 0 auto; margin-bottom: 8px; }
+.attribute-values-list { flex: 1 1 auto; min-height: 0; max-height: 240px; overflow-y: auto; overscroll-behavior: contain; padding: 0; margin: 0 0 10px; }
+.attribute-value-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.attribute-value-name { flex: 1 1 100px; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.attribute-value-count { white-space: nowrap; }
+.attribute-value-actions { display: inline-flex; gap: 8px; margin-left: auto; }
+.attribute-value-actions button { font-size: 12px; }
+.attribute-value-edit, .attribute-add-form { display: flex; align-items: center; gap: 6px; width: 100%; }
+.attribute-add-form { flex: 0 0 auto; }
+.attribute-value-edit input, .attribute-add-form input { flex: 1 1 auto; min-width: 0; height: 36px; padding: 6px 9px; }
+.attribute-value-edit button, .attribute-add-form button { flex: 0 0 auto; padding: 7px 10px; font-size: 12px; }
+@media (max-width: 700px) { .attribute-values-grid { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .categories-page .category-table-panel { height: min(430px, 62dvh); min-height: 290px; } }

@@ -1,0 +1,16 @@
+{
+    "routes": {
+      "dashboard": "/api/v1/admin/dashboard",
+      "sales_trend": "/api/v1/admin/dashboard/sales-trend",
+      "top_products": "/api/v1/admin/dashboard/top-products"
+    },
+    "order": {
+      "delivery_name": "Dashboard Tester",
+      "delivery_phone": "+919876500000",
+      "delivery_address_line_1": "1 Test Street",
+      "delivery_city": "Testville",
+      "delivery_state": "TS",
+      "delivery_postal_code": "100001",
+      "delivery_country": "IN"
+    }
+  }

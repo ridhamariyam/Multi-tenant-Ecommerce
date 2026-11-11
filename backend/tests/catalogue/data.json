@@ -1,0 +1,69 @@
+{
+  "routes": {
+    "categories": "/api/v1/catalogue/categories",
+    "products": "/api/v1/catalogue/products",
+    "variants": "/api/v1/catalogue/variants",
+    "images": "/api/v1/catalogue/images",
+    "inventory": "/api/v1/catalogue/variants/{variant_id}/inventory",
+    "storefront": "/api/v1/storefront"
+  },
+  "image": {
+    "url": "https://cdn.example.com/dress.jpg",
+    "alt_text": "Front view"
+  },
+  "category": {
+    "name": "Dresses",
+    "description": "Womenswear"
+  },
+  "product": {
+    "name": "Summer Dress"
+  },
+  "variant": {
+    "sku": "DRESS-S-BLK",
+    "name": "Small / Black",
+    "price": "49.99"
+  },
+  "stocked_variant": {
+    "sku": "STOCK-1",
+    "name": "Standard",
+    "price": "100.00",
+    "status": "ACTIVE",
+    "initial_quantity": 10,
+    "low_stock_threshold": 2
+  },
+  "optioned_variant": {
+    "sku": "TSH-BLK-M",
+    "name": "M / Black",
+    "price": "999.00",
+    "status": "ACTIVE",
+    "options": [
+      {
+        "name": "Color",
+        "value": "Black"
+      },
+      {
+        "name": "Size",
+        "value": "M"
+      }
+    ],
+    "initial_quantity": 4
+  },
+  "storefront_variant": {
+    "name": "Standard",
+    "status": "ACTIVE",
+    "options": [
+      {
+        "name": "Color",
+        "value": "Black"
+      }
+    ]
+  },
+  "storefront_product": {
+    "name": "Linen Shirt",
+    "brand": "Zeen"
+  },
+  "storefront_defaults": {
+    "price": "1000.00",
+    "quantity": 5
+  }
+}

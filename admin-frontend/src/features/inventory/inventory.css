@@ -1,0 +1,14 @@
+.inventory-page > .tabs { flex-shrink: 0; margin: 0 0 8px; }
+.inventory-page .inventory-filters { gap: 8px; margin-bottom: 9px; }
+.inventory-page .inventory-filters input { flex: 0 1 260px; min-width: 160px; }
+.inventory-page .inventory-filters select { flex: 0 1 200px; min-width: 150px; }
+.inventory-page .inventory-table-panel { flex: 1 1 auto; max-height: min(56dvh, 490px); min-height: 280px; }
+.inventory-page .inventory-table-panel :is(th, td) { padding: 7px 9px; }
+.inventory-page .inventory-table-panel .table-wrap { min-height: 0; }
+.inventory-page .inventory-table-panel :is(img.inventory-thumb, .product-image-placeholder.inventory-thumb) { width: 42px; height: 52px; object-fit: contain; object-position: center; background: var(--surface-strong); border: 1px solid var(--line); border-radius: 8px; }
+.inventory-page .product-image-placeholder.inventory-thumb { display: grid; place-items: center; color: var(--muted); }
+.inventory-page .inventory-export { gap: 6px; }
+.inventory-page .inventory-export button { padding: 7px 10px; }
+.inventory-page .inventory-data-note { font-size: 12px; margin: 0 0 7px; }
+@media (max-width: 860px) { .inventory-page .inventory-table-panel { flex: none; height: min(60dvh, 490px); min-height: 280px; } }
+.inventory-page .inventory-record-id { display: block; max-width: 145px; overflow-wrap: anywhere; font-size: 11px; line-height: 1.25; color: var(--muted); }

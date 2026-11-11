@@ -1,0 +1,16 @@
+.delivery-page > .page-header { margin-bottom: 10px; }
+.delivery-page > .notice { margin-bottom: 10px; padding: 8px 12px; font-size: 12px; line-height: 1.35; }
+.delivery-page > .panel { margin-bottom: 10px; padding: 14px 16px; border-radius: 18px; }
+.delivery-page > .form { gap: 9px; }
+.delivery-page .form-grid { gap: 8px 10px; }
+.delivery-page .field { min-width: 0; gap: 3px; }
+.delivery-page > .form :is(input:not([type="checkbox"]), select) { min-height: 38px; padding: 7px 9px; }
+.delivery-page > .form .form-actions { padding-top: 0; }
+.delivery-page .delivery-pincodes-panel .panel-title { margin-bottom: 8px; }
+.delivery-page .delivery-pincodes-panel .filters { margin-bottom: 8px; }
+.delivery-page .delivery-pincodes-panel .filters input { flex: 0 1 260px; min-width: 170px; min-height: 38px; padding: 7px 9px; }
+.delivery-page .delivery-pincodes-panel .table-wrap { max-height: min(48dvh, 390px); overflow: auto; overscroll-behavior: contain; }
+.delivery-page .delivery-pincodes-panel th { position: sticky; top: 0; z-index: 1; }
+.delivery-page .delivery-pincodes-panel :is(th, td) { padding: 8px 10px; }
+.delivery-page .delivery-pincodes-panel .pagination { margin-top: 0; padding-top: 8px; }
+@media (max-width: 600px) { .delivery-page .delivery-pincodes-panel .filters input { flex: 1 1 100%; } }

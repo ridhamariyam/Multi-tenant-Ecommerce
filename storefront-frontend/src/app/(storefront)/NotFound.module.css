@@ -1,0 +1,48 @@
+.page {
+  --ink: #1a1714;
+  --ink-soft: #55504b;
+  --accent: #8f5a3c;
+  --cream: #fbfaf8;
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Montserrat, Helvetica, sans-serif;
+  padding: clamp(48px, 10vw, 120px) 16px;
+}
+.inner { max-width: 520px; }
+.code {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(88px, 22vw, 180px);
+  line-height: 1;
+  color: var(--accent);
+  margin: 0;
+}
+.title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(24px, 5vw, 34px);
+  margin: 8px 0 14px;
+}
+.copy {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin: 0 0 32px;
+}
+.btn {
+  display: inline-block;
+  padding: 14px 34px;
+  background: var(--ink);
+  color: var(--cream);
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+.btn:hover { background: var(--accent); }

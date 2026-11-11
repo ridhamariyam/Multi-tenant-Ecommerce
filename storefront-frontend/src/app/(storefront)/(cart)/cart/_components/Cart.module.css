@@ -1,0 +1,374 @@
+/*
+ * Cart page -- extends the same CliQ design system as Home/Product
+ * Listing/Wishlist (Home.module.css tokens + the Listing page's banner/
+ * breadcrumb, both reused directly in Cart.tsx). Only what's genuinely
+ * cart-specific -- the row layout, qty stepper, order summary -- is
+ * defined here, same split as Wishlist.module.css.
+ */
+
+.cartSection {
+  padding: 8px 0 88px;
+}
+
+/* Match the warm page canvas used by My Account and My Orders. */
+.page {
+  background: var(--cream, #fbfaf8);
+}
+
+.error {
+  background: #fdecec;
+  color: #b42318;
+  border-radius: var(--radius-sm, 10px);
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* -------------------------------- list / rows -------------------------------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line, #e7e2db);
+}
+
+.row:first-child {
+  padding-top: 0;
+}
+
+.thumb {
+  position: relative;
+  flex-shrink: 0;
+  display: block;
+  width: 96px;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md, 16px);
+  overflow: hidden;
+  background: var(--card, #f4f1ec);
+}
+
+/* `contain`, not `cover` -- this is the shopper's own chosen photo, so the
+   whole thing stays visible rather than being cropped to fill the box. */
+.thumb img {
+  object-fit: contain;
+}
+
+.thumbEmpty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted, #8b857e);
+  text-align: center;
+  padding: 8px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink, #1a1714);
+  margin: 0 0 2px;
+}
+
+.name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.variant {
+  font-size: 12.5px;
+  color: var(--muted, #8b857e);
+  margin: 0;
+}
+
+.price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0;
+}
+
+.removeBtn {
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--muted, #8b857e);
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.removeBtn:hover:not(:disabled) {
+  color: var(--ink, #1a1714);
+}
+
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.qtyStepperMobile {
+  display: block;
+}
+
+.removeBtnMobile {
+  display: block;
+  flex-shrink: 0;
+}
+
+.qtyStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line, #e7e2db);
+  border-radius: 999px;
+  padding: 6px 16px;
+  width: fit-content;
+}
+
+.qtyStepper button {
+  border: none;
+  background: none;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink, #1a1714);
+  cursor: pointer;
+  padding: 0;
+  width: 14px;
+}
+
+.qtyStepper button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.qtyStepper span {
+  font-size: 14px;
+  min-width: 14px;
+  text-align: center;
+}
+
+/* Desktop/tablet-only right-hand cluster (qty, line total, remove) -- one
+   copy shown at a time via the breakpoint below, matching the mobile
+   stacked qty/price/X it replaces rather than reflowing the same nodes. */
+.desktopMeta {
+  display: none;
+}
+
+.lineTotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.clearCartBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--muted, #8b857e);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 20px 0 0;
+}
+
+.clearCartBtn:hover:not(:disabled) {
+  color: var(--ink, #1a1714);
+}
+
+.clearCartBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* -------------------------------- order summary -------------------------------- */
+
+.summary {
+  border: 1px solid var(--line, #e7e2db);
+  border-radius: var(--radius-md, 16px);
+  padding: 24px;
+}
+
+.summaryTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0 0 18px;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--ink-soft, #55504b);
+  padding: 8px 0;
+}
+
+.discountValue {
+  color: var(--rust, #a9714a);
+}
+
+.summaryTotalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--line, #e7e2db);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink, #1a1714);
+}
+
+.checkoutBtn {
+  display: flex;
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  margin-top: 20px;
+  padding: 0 22px;
+  border: 0.5px solid var(--ink, #1a1714);
+  border-radius: 45px;
+  background: var(--ink, #1a1714);
+  color: #fff;
+  font-family: Montserrat, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-align: center;
+  line-height: 1.6;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.checkoutBtn:hover {
+  opacity: 0.85;
+}
+
+.checkoutBtn:focus-visible {
+  outline: 2px solid var(--ink, #1a1714);
+  outline-offset: 2px;
+}
+
+/* -------------------------------- empty state -------------------------------- */
+
+.empty {
+  text-align: center;
+  padding: 72px 20px;
+}
+
+.emptyIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--card, #f4f1ec);
+  color: var(--muted, #8b857e);
+  margin-bottom: 22px;
+}
+
+.emptyHeading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink, #1a1714);
+  margin: 0 0 8px;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--muted, #8b857e);
+  margin: 0 0 26px;
+}
+
+/* -------------------------------- responsive -------------------------------- */
+
+@media (min-width: 992px) {
+  .layout {
+    grid-template-columns: 1.7fr 1fr;
+    gap: 40px;
+  }
+
+  .row {
+    align-items: center;
+    gap: 24px;
+  }
+
+  .thumb {
+    width: 130px;
+  }
+
+  .name {
+    font-size: 16px;
+  }
+
+  .price {
+    font-size: 15px;
+  }
+
+  .qtyStepperMobile,
+  .removeBtnMobile {
+    display: none;
+  }
+
+  .desktopMeta {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-shrink: 0;
+  }
+
+  .summary {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .cartSection {
+    padding-bottom: 96px; /* clears the fixed mobile bottom nav */
+  }
+}

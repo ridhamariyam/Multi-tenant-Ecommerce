@@ -1,0 +1,985 @@
+/*
+ * Collection page (`/collections/[slug]`). Both sections also carry Home's
+ * `.container`, so the grid lines up with the shared header and footer.
+ * Layout and interactions follow
+ * a full-bleed editorial collection grid: a slim toolbar (Filters / count /
+ * sort), a 4 / 3 / 2 column grid of 3:4 images with square corners, and a
+ * centered filter modal. Colors and type come from the CliQ tokens declared
+ * on Home.module.css's `.page`, which this page also carries.
+ */
+
+.page {
+  background: var(--cream, #fbfaf8);
+}
+
+.visuallyHidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------- Intro --------------------------------- */
+
+.intro {
+  padding-top: 36px;
+  padding-bottom: 8px;
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.crumb a:hover,
+.crumb [aria-current] {
+  color: var(--ink);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.description {
+  max-width: 560px;
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* -------------------------------- Toolbar -------------------------------- */
+
+.listing {
+  padding-top: 24px;
+  padding-bottom: 96px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.toolbarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 22px;
+  border: 0.5px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.toolbarButton:hover,
+.toolbarButton[aria-expanded='true'] {
+  border-color: var(--ink);
+}
+.toolbarButton:focus-visible,
+.sortOption:focus-visible,
+.chip:focus-visible,
+.iconButton:focus-visible,
+.outlineButton:focus-visible,
+.solidButton:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.toolbarButton svg {
+  transition: transform 0.2s ease;
+}
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.showing {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-left: 32px;
+  border-left: 0.5px solid var(--line);
+  line-height: 1.3;
+}
+.showingLabel {
+  font-size: 11px;
+  color: var(--muted);
+}
+.showingValue {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.sortWrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.sortPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 100%;
+  padding: 6px 0;
+  background: #fff;
+  border: 0.5px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 9px 18px rgba(0, 0, 0, 0.1), 0 4.5px 9px rgba(0, 0, 0, 0.05);
+}
+
+.sortOption {
+  display: block;
+  width: 100%;
+  padding: 8px 22px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: left;
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sortOption:hover,
+.sortOptionActive {
+  background: var(--card);
+}
+.sortOptionActive {
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -16px 0 28px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--ink);
+}
+.chipClear {
+  border: none;
+  background: none;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.chipClear:hover {
+  color: var(--ink);
+}
+
+/* ---------------------------------- Grid ---------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 64px 22px;
+}
+
+.card {
+  min-width: 0;
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.mediaLink {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.image {
+  object-fit: cover;
+  object-position: top center;
+}
+
+.mediaEmpty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 5px 10px;
+  background: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  pointer-events: none;
+}
+.badgeDark {
+  background: var(--ink);
+  color: #fff;
+}
+
+.iconButton {
+  position: absolute;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.iconButton:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+.iconButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.wishlistButton {
+  top: 10px;
+}
+.wishlistActive {
+  color: var(--terracotta);
+}
+.quickAddButton {
+  bottom: 10px;
+}
+
+.info {
+  padding-top: 16px;
+}
+
+.name {
+  /* Two-line box so prices line up across a row whatever the name length. */
+  min-height: calc(1.25em * 2);
+  margin: 0 0 18px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.name a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.savedVariant {
+  margin: -12px 0 12px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.cardPriceRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.price {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.swatches {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.card:hover .swatches,
+.card:focus-within .swatches {
+  opacity: 1;
+}
+@media (hover: none) {
+  .swatches {
+    opacity: 1;
+  }
+}
+.swatch {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(17, 17, 17, 0.18);
+}
+
+.empty {
+  padding: 96px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+.empty p {
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+/* ------------------------------- Load more ------------------------------- */
+
+.loadMore {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-top: 72px;
+}
+.loadMoreCount {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.progress {
+  width: 200px;
+  height: 2px;
+  background: var(--line);
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+/* -------------------------------- Buttons -------------------------------- */
+
+.outlineButton,
+.solidButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: 46px;
+  padding: 0 24px;
+  border-radius: 45px;
+  border: 0.5px solid var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.4s ease, background-color 0.4s ease, opacity 0.3s ease;
+}
+.outlineButton {
+  background: transparent;
+  color: var(--ink);
+}
+.outlineButton:hover {
+  background: var(--ink);
+  color: #fff;
+}
+.solidButton {
+  background: var(--ink);
+  color: #fff;
+}
+.solidButton:hover {
+  opacity: 0.85;
+}
+
+/* ------------------------------ Quick add sheet ------------------------------ */
+
+.sheet {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  animation: sheetIn 0.25s var(--cliq-ease, ease) both;
+}
+.sheet:focus {
+  outline: none;
+}
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.sheetHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sheetTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.sheetClose {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sheetNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sheetOption {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sheetOptionLabel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheetValues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sheetValue {
+  min-width: 36px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sheetValue:hover:not(:disabled),
+.sheetValueActive {
+  border-color: var(--ink);
+}
+.sheetValueActive {
+  background: var(--ink);
+  color: #fff;
+}
+.sheetValue:disabled {
+  color: var(--muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.sheetAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+}
+.sheetAdd:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sheetView {
+  align-self: center;
+  font-size: 11px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ------------------------------ Filter modal ----------------------------- */
+
+.drawerRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.24s;
+}
+.drawerOpen {
+  visibility: visible;
+  pointer-events: auto;
+  transition: none;
+}
+
+.drawerOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 17, 15, 0.42);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+.drawerOpen .drawerOverlay {
+  opacity: 1;
+}
+
+.drawer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100dvh - 48px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cream, #fbfaf8);
+  color: var(--ink);
+  box-shadow: 0 24px 80px rgba(17, 17, 17, 0.2);
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  transition: opacity 0.24s ease, transform 0.24s var(--cliq-ease, ease);
+}
+.drawerOpen .drawer {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.drawerHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 94px;
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.drawerClose {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  display: inline-flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.drawerTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.drawerDescription {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.drawerForm {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 32px 12px;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  align-content: start;
+}
+
+.facet {
+  padding: 18px 0;
+  border-bottom: 0.5px solid var(--line);
+}
+.facet:last-child {
+  border-bottom: none;
+}
+.facetSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  list-style: none;
+  cursor: pointer;
+}
+.facetSummary::-webkit-details-marker {
+  display: none;
+}
+.facetChevron {
+  transition: transform 0.2s ease;
+}
+.facet[open] .facetChevron {
+  transform: rotate(180deg);
+}
+.facetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+.optionRowActive {
+  font-weight: 600;
+}
+.optionCount {
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.checkbox {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.radio {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 0.5px solid var(--ink);
+  border-radius: 50%;
+}
+.optionRowActive .radio {
+  box-shadow: inset 0 0 0 3px #fff;
+  background: var(--ink);
+}
+
+.colorDot {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(17, 17, 17, 0.18);
+}
+
+.sizeGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sizeChip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0.5px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sizeChip:hover {
+  border-color: var(--ink);
+}
+.sizeChip:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.sizeChipActive {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.priceRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.priceField {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.priceLabel {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.priceInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 14px;
+  border: 0.5px solid var(--line);
+  border-radius: 4px;
+  font-size: 13px;
+}
+.priceInputWrap:focus-within {
+  border-color: var(--ink);
+}
+.priceInputWrap input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  -moz-appearance: textfield;
+}
+.priceInputWrap input:focus {
+  outline: none;
+}
+.priceInputWrap input::-webkit-outer-spin-button,
+.priceInputWrap input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.drawerActions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 32px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--cream, #fbfaf8);
+}
+.drawerActions .outlineButton,
+.drawerActions .solidButton {
+  width: auto;
+  min-width: 150px;
+  height: 42px;
+}
+
+/* ------------------------------- Breakpoints ------------------------------- */
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 749px) {
+  .intro {
+    padding-top: 24px;
+  }
+  .listing {
+    padding-top: 16px;
+    padding-bottom: 112px; /* clears the fixed mobile bottom nav */
+  }
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .toolbarButton {
+    width: 100%;
+  }
+  .showing {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    gap: 4px;
+    padding-left: 0;
+    border-left: none;
+  }
+  .sortWrap {
+    margin-left: 0;
+  }
+  .chips {
+    margin-top: -8px;
+    margin-bottom: 20px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+  }
+  .drawerRoot {
+    padding: 12px;
+  }
+  .drawer {
+    width: min(560px, 100%);
+    max-height: calc(100dvh - 24px);
+    border-radius: 8px;
+  }
+  .drawerHead {
+    min-height: 82px;
+    padding: 18px 56px 16px 20px;
+  }
+  .drawerTitle {
+    font-size: 21px;
+  }
+  .drawerClose {
+    top: 18px;
+    right: 16px;
+  }
+  .drawerBody {
+    display: block;
+    padding: 0 20px 8px;
+  }
+  .drawerActions {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 8px;
+    padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+  }
+  .drawerActions .outlineButton,
+  .drawerActions .solidButton {
+    min-width: 0;
+    height: 42px;
+  }
+  .info {
+    padding-top: 12px;
+  }
+  .name {
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  .cardPriceRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .drawerHead {
+    padding: 48px 20px 12px;
+  }
+  .drawerClose {
+    right: 16px;
+  }
+  .drawerBody {
+    padding: 0 20px;
+  }
+  .drawerActions {
+    padding: 16px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+}

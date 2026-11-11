@@ -1,0 +1,115 @@
+/*
+ * CliQ notifications (react-toastify).
+ *
+ * react-toastify v11 injects its own <style> into <head> at runtime -- after
+ * this stylesheet -- and that stylesheet redefines the colour variables on
+ * :root (success is a bright #07bc0c green). Rules here therefore never sit on
+ * :root or rely on source order: the variables are set on the container
+ * element itself (nearest definition wins for inheritance), and every rule is
+ * prefixed with `.Toastify` so it out-specifies the injected single-class ones.
+ */
+
+.Toastify {
+  --cliq-toast-navy: #0d133c;
+  --cliq-toast-ink: #171717;
+  --cliq-toast-muted: #6b6b6b;
+  --cliq-toast-line: #e6e2dc;
+  --cliq-toast-error: #8c3341;
+
+  --toastify-color-light: #fff;
+  --toastify-color-info: var(--cliq-toast-navy);
+  --toastify-color-success: var(--cliq-toast-navy);
+  --toastify-color-warning: var(--cliq-toast-navy);
+  --toastify-color-error: var(--cliq-toast-error);
+  --toastify-icon-color-info: var(--cliq-toast-navy);
+  --toastify-icon-color-success: var(--cliq-toast-navy);
+  --toastify-icon-color-warning: var(--cliq-toast-navy);
+  --toastify-icon-color-error: var(--cliq-toast-error);
+  --toastify-text-color-light: var(--cliq-toast-ink);
+  --toastify-font-family: Montserrat, Helvetica, sans-serif;
+  --toastify-toast-bd-radius: 8px;
+  --toastify-toast-shadow: 0 8px 28px rgb(17 17 17 / 10%);
+}
+
+.Toastify .Toastify__toast-container {
+  top: calc(88px + env(safe-area-inset-top));
+  right: 24px;
+  z-index: 1100;
+  width: min(360px, calc(100vw - 48px));
+  padding: 0;
+}
+
+.Toastify .Toastify__toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--cliq-toast-line);
+  border-left: 3px solid var(--cliq-toast-navy);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--cliq-toast-ink);
+  box-shadow: 0 8px 28px rgb(17 17 17 / 10%);
+  font-family: Montserrat, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+}
+
+.Toastify .Toastify__toast--error {
+  border-left-color: var(--cliq-toast-error);
+}
+
+/* The library's icon, kept small and tinted navy instead of saturated green. */
+.Toastify .Toastify__toast-icon {
+  display: inline-flex;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  color: var(--cliq-toast-navy);
+}
+
+.Toastify .Toastify__toast-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.Toastify .Toastify__toast--error .Toastify__toast-icon {
+  color: var(--cliq-toast-error);
+}
+
+.Toastify .Toastify__progress-bar,
+.Toastify .Toastify__progress-bar--wrp {
+  display: none;
+}
+
+.Toastify .Toastify__close-button {
+  align-self: center;
+  margin-left: auto;
+  color: var(--cliq-toast-ink);
+  opacity: 0.6;
+}
+
+.Toastify .Toastify__close-button:hover,
+.Toastify .Toastify__close-button:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .Toastify .Toastify__toast-container {
+    top: calc(66px + env(safe-area-inset-top));
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
+.Toastify .Toastify__toast--entering,
+.Toastify .Toastify__toast--exiting {
+  animation: none !important;
+}
