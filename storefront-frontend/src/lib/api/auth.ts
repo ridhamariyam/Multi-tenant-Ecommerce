@@ -20,13 +20,19 @@ export const authApi = {
   },
 
   /** Rotate a refresh token. Reusing a revoked one revokes every session. */
-  /** `host`: the storefront domain, for callers (middleware) that cannot read request headers. */
-  refresh(refreshToken: string, host?: string | null): Promise<TokenPair> {
+  /**
+   * `forward`: the storefront domain and the shopper's IP, for callers
+   * (middleware) that cannot read request headers themselves.
+   */
+  refresh(refreshToken: string, forward: { host?: string | null; ip?: string | null } = {}): Promise<TokenPair> {
+    const headers: Record<string, string> = {};
+    if (forward.host) headers['X-Forwarded-Host'] = forward.host;
+    if (forward.ip) headers['X-Forwarded-For'] = forward.ip;
     return apiRequest<TokenPair>('/auth/refresh', {
       method: 'POST',
       body: { refresh_token: refreshToken },
       cache: 'no-store',
-      ...(host ? { headers: { 'X-Forwarded-Host': host } } : {}),
+      headers,
     });
   },
 

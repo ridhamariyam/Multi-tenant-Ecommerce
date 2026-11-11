@@ -10,6 +10,15 @@
 
 name: cliq
 
+# Docker keeps container logs forever by default; the API logs a JSON line
+# per request, so cap each container at 5 x 20 MB (`docker compose logs`
+# still works). Ship logs elsewhere if you need longer history.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 x-backend: &backend
   build:
     context: ./backend
@@ -26,10 +35,12 @@ x-backend: &backend
     # Only Caddy and the frontends talk to the API (private network).
     FORWARDED_ALLOW_IPS: "*"
   restart: unless-stopped
+  logging: *default-logging
   networks: [internal]
 
 services:
   postgres:
+    logging: *default-logging
     image: postgres:16
     restart: unless-stopped
     environment:
@@ -47,6 +58,7 @@ services:
     networks: [internal]
 
   redis:
+    logging: *default-logging
     image: redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -63,6 +75,7 @@ services:
   # instead and remove this service; MinIO here keeps a single-server install
   # self-contained.
   minio:
+    logging: *default-logging
     image: bitnamilegacy/minio:2025.5.24
     restart: unless-stopped
     environment:
@@ -83,7 +96,9 @@ services:
   migrate:
     <<: *backend
     restart: "no"
-    command: ["alembic", "upgrade", "head"]
+    # alembic upgrade head; skips (exit 0) when the database is newer than this
+    # release, so a rolled-back API can start. See app/commands/migrate.py.
+    command: ["python", "-m", "app.commands.migrate"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,6 +154,7 @@ services:
       start_period: 60s
 
   storefront:
+    logging: *default-logging
     build:
       context: ./storefront-frontend
       args:
@@ -159,6 +175,7 @@ services:
     networks: [internal]
 
   admin:
+    logging: *default-logging
     build:
       context: ./admin-frontend
       args:
@@ -172,6 +189,7 @@ services:
     networks: [internal]
 
   caddy:
+    logging: *default-logging
     image: caddy:2.10-alpine
     restart: unless-stopped
     ports:
@@ -200,6 +218,7 @@ services:
   # Nightly database dumps kept on the backups volume (BACKUP_KEEP_DAYS).
   # Copy them off the server too -- see docs/deployment.md.
   backup:
+    logging: *default-logging
     image: postgres:16
     restart: unless-stopped
     environment:

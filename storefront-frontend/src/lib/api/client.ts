@@ -1,5 +1,5 @@
 import { apiBaseUrl } from '@/lib/env';
-import { visitedHost } from '@/lib/api/visited-host';
+import { visitedHost, visitorIp } from '@/lib/api/visited-host';
 import { ApiError, ApiUnreachableError } from '@/lib/api/errors';
 import type { ApiEnvelope, ApiErrorEnvelope, Page } from '@/types/api';
 
@@ -103,6 +103,15 @@ async function send<T>(path: string, options: RequestOptions): Promise<ApiEnvelo
   if (!requestHeaders['X-Forwarded-Host']) {
     const host = await visitedHost();
     if (host) requestHeaders['X-Forwarded-Host'] = host;
+  }
+
+  // Per-shopper rate limits need the shopper's IP. Only on uncached calls:
+  // Next keys its fetch cache on headers, and cached catalogue reads must
+  // stay shared between shoppers.
+  const cacheable = cache === 'force-cache' || revalidate !== undefined || tags !== undefined;
+  if (!cacheable && !requestHeaders['X-Forwarded-For']) {
+    const ip = await visitorIp();
+    if (ip) requestHeaders['X-Forwarded-For'] = ip;
   }
 
   const next: { revalidate?: number | false; tags?: string[] } = {};

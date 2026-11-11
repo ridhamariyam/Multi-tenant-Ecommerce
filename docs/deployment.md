@@ -36,7 +36,18 @@ requested, and only after the API confirms it is a real, active store
   minimum, 8 GB recommended. Builds need ~2 GB free.
 - DNS: `A` (and `AAAA` if you have IPv6) records for `<root>` **and** `*.<root>`
   pointing at the server.
-- Ports 80 and 443 open (80 is needed for Let's Encrypt).
+- Ports 80 and 443 open (80 is needed for Let's Encrypt); everything else closed
+  (e.g. `ufw allow 22,80,443/tcp && ufw allow 443/udp && ufw enable`).
+- Database connections: each API worker may open `DB_POOL_SIZE + DB_MAX_OVERFLOW`
+  (default 20). Keep `API_WORKERS × 20 + 40` (scheduler, AI worker, migrate,
+  backups) under PostgreSQL's default `max_connections` of 100. So with the default
+  pool, use at most 3 workers. For more, lower `DB_POOL_SIZE`/`DB_MAX_OVERFLOW`
+  (e.g. 5/5 for 6 workers).
+- Let's Encrypt issues at most 50 new certificates per registered domain per week.
+  Each new brand subdomain uses one; renewals don't count. Beyond ~50 new brands a
+  week, switch to a wildcard certificate (DNS challenge; needs a Caddy build with
+  your DNS provider's module), which is not set up here.
+- Container logs are capped at 5 × 20 MB per service (`x-logging`).
 
 ## First deploy
 
@@ -93,7 +104,9 @@ Migrations are written to be additive (new tables/columns, backfills). Never run
 - **Code only (no migration in the release):** set `CLIQ_VERSION` back to the
   previous number and `up -d` again — the previous images are still on disk.
 - **The release included a migration:** the old code usually still works with the
-  newer (additive) schema, so roll back code as above. If it does not, restore the
+  newer (additive) schema, so roll back code as above. `migrate` sees a database
+  newer than the code, logs `"status": "skipped"` and lets the old API start
+  (verified on the rehearsal stack). If it does not, restore the
   backup taken in step 1 (below) and then roll back code. Restoring loses orders
   placed since the backup, so prefer a fix-forward release when possible.
 
@@ -126,11 +139,17 @@ Migrations are written to be additive (new tables/columns, backfills). Never run
 - **Real restore** (after stopping traffic):
 
   ```sh
-  docker compose -f docker-compose.prod.yml --env-file .env.production stop api scheduler storefront admin
+  docker compose -f docker-compose.prod.yml --env-file .env.production stop api scheduler ai-worker storefront admin
+  # Single quotes: the user and database names come from the container's environment.
   docker compose -f docker-compose.prod.yml --env-file .env.production exec -T postgres \
-      pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB" < latest.dump
+      sh -c 'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < latest.dump
   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
   ```
+
+  Verified on the rehearsal stack (2026-11-12): fresh dump → restore → same row
+  counts, stack healthy. Stored brand payment keys are encrypted with
+  `SECRETS_ENCRYPTION_KEY`: a restore onto a server with a different key loses them
+  (brands must re-enter them), so keep that key with your backups, stored separately.
 
 ## Monitoring
 

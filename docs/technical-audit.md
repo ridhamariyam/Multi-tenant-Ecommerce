@@ -89,27 +89,27 @@ folder.
 | Brand registration, switching, members, roles | COMPLETE AND TESTED (API + admin UI) |
 | Store settings, publish, custom domains (TXT generated, admin-verified) | COMPLETE AND TESTED (API + admin UI); TXT not checked automatically, logo/favicon are URLs (no upload yet) |
 | Platform admin (overview, brands, suspend/reinstate, domains with DNS check) | COMPLETE AND TESTED (API + UI), actions audited in the brand's log |
-| Password recovery, email verification for merchants | NOT IMPLEMENTED |
+| Password recovery, email verification for merchants | Password reset: IMPLEMENTED, NOT LIVE-VERIFIED (needs SMTP). Email verification: NOT IMPLEMENTED |
 | Onboarding checklist, demo data | NOT IMPLEMENTED |
-| Subscription plans / brand subscriptions | PARTIAL — models + service, **no API, no billing provider** |
-| Credits / usage ledger | PARTIAL — models + service, no API |
+| Subscription plans / brand subscriptions | IMPLEMENTED, NOT LIVE-VERIFIED — limits enforced and tested; Razorpay Subscriptions never called live (Step 8) |
+| Credits / usage ledger | COMPLETE AND TESTED (API + console) |
 | Virtual model library | PARTIAL — admin/brand API exists, no UI |
-| AI try-on (FASHN) via Celery | PARTIAL — provider, job service, worker code exist; **no Celery worker in compose, no API, no UI**; BLOCKED (EXTERNAL) for live calls |
-| Lookbooks | PARTIAL — models only |
+| AI try-on (FASHN) via Celery | IMPLEMENTED (worker in compose, API, UI); BLOCKED (EXTERNAL) for live generation (FASHN key) |
+| Lookbooks | COMPLETE AND TESTED (API + console + storefront runway) |
 
 ### Infrastructure
 
 | Item | Status |
 |---|---|
 | Backend image + healthchecks | IMPLEMENTED |
-| Storefront / admin Docker images | IMPLEMENTED, NOT BUILT (disk full during build) |
-| Reverse proxy, TLS, wildcard subdomains, custom-domain certs | IMPLEMENTED (Caddy, on-demand TLS gated by the API), config validated; NOT LIVE-VERIFIED |
-| Scheduled jobs | COMPLETE AND TESTED: one scheduler process (all 5 jobs, timeouts, JSON logs, healthcheck); Celery worker for AI still not deployed |
+| Storefront / admin Docker images | COMPLETE AND TESTED (built and run in the production rehearsal) |
+| Reverse proxy, TLS, wildcard subdomains, custom-domain certs | Verified on the local production stack (Caddy local CA, on-demand certs gated by the API). Let's Encrypt issuance/renewal and real DNS: REQUIRES PUBLIC SERVER |
+| Scheduled jobs | COMPLETE AND TESTED: one scheduler process (7 jobs, timeouts, JSON logs, healthcheck, job status in the System tab); AI Celery worker in compose |
 | CI pipeline | NOT IMPLEMENTED |
-| Error monitoring (Sentry or similar), metrics | NOT IMPLEMENTED |
-| Structured logging | PARTIAL — request ids exist; logs are plain text |
+| Error monitoring (Sentry or similar), metrics | Sentry + alert webhook: IMPLEMENTED, NOT LIVE-VERIFIED (no DSN/webhook). Metrics: NOT IMPLEMENTED |
+| Structured logging | COMPLETE AND TESTED (JSON lines, request ids; container logs capped 5 × 20 MB) |
 | Backups | COMPLETE AND TESTED locally: nightly dump service + restore drill (passes on a real dump, fails on a corrupt one); off-site copy is an operator task |
-| Staging / production configs | PARTIAL — one `.env`; `ENVIRONMENT` switch exists |
+| Staging / production configs | IMPLEMENTED (`.env.production.example`, production refuses weak settings); staging server not set up |
 | End-to-end tests (Playwright) | NOT IMPLEMENTED |
 | Load tests | NOT IMPLEMENTED — no capacity figures exist |
 
@@ -424,3 +424,21 @@ Full `docker-compose.prod.yml` stack built and run locally (Caddy local CA). Bug
 
 Verified: all services healthy; migrate-before-API; bootstrap; console signup → brand → publish → on-demand certificate; unknown hosts refused; API private routes 404 from outside; scheduler jobs ok (disk-space job correctly alerting at <10% free on this laptop); backup + restore drill on real data; E2E 4/4 over HTTPS; load test (see deployment.md): 0 errors up to 60 concurrent shoppers, ~120 req/s ceiling with 2 API workers on a laptop.
 
+### Deployment readiness audit (2026-11-12)
+
+Full findings, checklist, DNS, variables, rollback and acceptance tests are in
+[`production-readiness.md`](production-readiness.md). Confirmed blockers it found, fixed and
+verified on the rehearsal stack:
+
+1. **Per-IP rate limits were shared by every shopper of a brand.** The storefront's server-side calls
+   (guest checkout, payment confirmation, order tracking, search/collections, sign-in, token refresh)
+   reached the API from the storefront container's address. In production the 11th guest order
+   in a minute would have failed for everyone. The storefront now forwards the shopper's IP (taken from Caddy's
+   `X-Forwarded-For`, which Caddy sets itself and does not accept from clients) on uncached calls.
+   Rate-limit keys in Redis confirmed the shopper's address is now counted, and a spoofed header was ignored.
+2. **Rollback after a migration could not start.** `alembic upgrade head` fails on a database a newer release
+   migrated (`Can't locate revision`), so the old API never started. `migrate` now runs
+   `app.commands.migrate`, which skips in that case and still fails on any real migration error (both verified).
+3. **Container logs grew without limit** (about 2–3 GB/day at the load-test rate). Every service is now capped at 5 × 20 MB.
+4. **The documented restore command could not run** (`$POSTGRES_USER` was expanded by the host shell, and the
+   AI worker was left running). Corrected and verified: dump → restore → same row counts.

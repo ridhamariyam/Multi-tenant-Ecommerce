@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { authApi } from '@/lib/api/auth';
+import { forwardedClientIp } from '@/lib/api/visited-host';
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_MAX_AGE_SECONDS,
@@ -55,7 +56,10 @@ export async function middleware(request: NextRequest) {
      with /account bouncing them to sign-in. */
   if (isTokenExpired(accessToken) && refreshToken) {
     try {
-      const tokens = await authApi.refresh(refreshToken, request.headers.get('host'));
+      const tokens = await authApi.refresh(refreshToken, {
+        host: request.headers.get('host'),
+        ip: forwardedClientIp(request.headers.get('x-forwarded-for')),
+      });
       accessToken = tokens.access_token;
       refreshed = { access: tokens.access_token, refresh: tokens.refresh_token };
     } catch {
