@@ -88,3 +88,36 @@ export type StoreUpdate = Partial<
 >;
 
 export type AssignableRole = "ADMIN" | "PRODUCT_MANAGER" | "ORDER_MANAGER";
+
+export interface DomainCheck {
+  domain: StoreDomain;
+  verified: boolean;
+  record_name: string;
+  expected: string;
+  found: string[];
+  problem: string | null;
+}
+
+export interface PlatformBrand {
+  brand: Brand;
+  store: Store | null;
+  member_count: number;
+  suspended_at: string | null;
+  suspension_reason: string | null;
+}
+
+export interface PlatformDomain {
+  domain: StoreDomain;
+  brand_id: string;
+  brand_name: string;
+  store_subdomain: string | null;
+}
+
+export interface PlatformOverview {
+  brands_total: number;
+  brands_active: number;
+  brands_suspended: number;
+  stores_published: number;
+  domains_pending: number;
+  merchant_accounts: number;
+}

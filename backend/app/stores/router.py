@@ -8,14 +8,22 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audit.service import record_activity
 from app.brands.dependencies import BrandManager
 from app.core.database import get_db
 from app.core.responses import ApiResponse, ok
-from app.stores.schemas import DomainCreate, DomainRead, StorePublish, StoreRead, StoreUpdate
-from app.stores.service import StoreService, domain_read, store_read
+from app.stores.schemas import (
+    DomainCheckRead,
+    DomainCreate,
+    DomainRead,
+    StorePublish,
+    StoreRead,
+    StoreUpdate,
+)
+from app.stores.service import StoreService, domain_check_read, domain_read, store_read
 from app.tenants.resolver import CurrentTenant
 
 router = APIRouter(prefix="/brand", tags=["Brand Store"])
@@ -72,6 +80,27 @@ async def add_domain(
     session: AsyncSession = Depends(get_db),
 ) -> ApiResponse[DomainRead]:
     return ok(domain_read(await StoreService(session, tenant).add_domain(data)), message="Domain added")
+
+
+@router.post(
+    "/domains/{domain_id}/check",
+    response_model=ApiResponse[DomainCheckRead],
+    summary="Look up the domain's TXT record and verify it when it matches",
+)
+async def check_domain(
+    domain_id: UUID,
+    tenant: CurrentTenant,
+    user: BrandManager,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> ApiResponse[DomainCheckRead]:
+    domain, result, newly_verified = await StoreService(session, tenant).check_domain(domain_id)
+    if newly_verified:
+        await record_activity(
+            session, user, "domain.verified", "domain", domain.id,
+            summary=f"Verified {domain.domain} by DNS", request=request,
+        )
+    return ok(domain_check_read(domain, result), message="Domain verified" if result.verified else "Not verified yet")
 
 
 @router.delete("/domains/{domain_id}", response_model=ApiResponse[None], summary="Remove a domain")

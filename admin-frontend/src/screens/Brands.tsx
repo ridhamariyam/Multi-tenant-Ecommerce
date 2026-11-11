@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { listMyBrands, registerBrand } from "../api/platform";
 import { useAuth } from "../auth/AuthContext";
@@ -51,6 +51,7 @@ function Brands() {
       <header className="brands-header">
         <div className="login-wordmark"><span className="brand-name">CliQ.</span><span className="brand-caption">LIMITLESS STYLE</span></div>
         <div className="brands-account">
+          {merchant.is_platform_admin && <Link to="/platform">Platform admin</Link>}
           <span className="muted">{merchant.name ?? merchant.email}</span>
           <button type="button" onClick={() => logout()}>Sign out</button>
         </div>

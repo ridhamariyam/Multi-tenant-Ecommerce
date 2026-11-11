@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addDomain, getStore, listDomains, publishStore, removeDomain, updateStore } from "../../api/platform";
+import { addDomain, checkDomain, getStore, listDomains, publishStore, removeDomain, updateStore } from "../../api/platform";
 import ConfirmButton from "../../components/common/ConfirmButton";
 import Field from "../../components/common/Field";
 import PageHeader from "../../components/common/PageHeader";
@@ -207,14 +207,14 @@ function DomainsPanel({ target }: { target: string }) {
       {domains.data && domains.data.length === 0 && <p className="muted">No custom domains yet.</p>}
       <ul className="store-domains">
         {domains.data?.map((d) => (
-          <DomainRow key={d.id} domain={d} target={target} onRemoved={domains.reload} />
+          <DomainRow key={d.id} domain={d} target={target} onChanged={domains.reload} />
         ))}
       </ul>
     </section>
   );
 }
 
-function DomainRow({ domain, target, onRemoved }: { domain: StoreDomain; target: string; onRemoved: () => void }) {
+function DomainRow({ domain, target, onChanged }: { domain: StoreDomain; target: string; onChanged: () => void }) {
   const action = useAction();
   const verified = !!domain.verified_at;
   return (
@@ -229,7 +229,7 @@ function DomainRow({ domain, target, onRemoved }: { domain: StoreDomain; target:
           confirmLabel="Remove"
           disabled={action.busy}
           onConfirm={async () => {
-            if (await action.run(() => removeDomain(domain.id), null, "Could not remove")) onRemoved();
+            if (await action.run(() => removeDomain(domain.id), null, "Could not remove")) onChanged();
           }}
         >
           Remove
@@ -247,8 +247,29 @@ function DomainRow({ domain, target, onRemoved }: { domain: StoreDomain; target:
               <code className="store-dns-value">{domain.verification_record}</code>
             </li>
           )}
-          <li>CliQ. verifies the domain after the records are visible (DNS changes can take up to 48 hours).</li>
+          <li>
+            Then press <strong>Check now</strong>. DNS changes can take up to 48 hours to appear.
+          </li>
         </ol>
+      )}
+      {!verified && (
+        <button
+          type="button"
+          className="store-domain-check"
+          disabled={action.busy}
+          onClick={async () => {
+            const result = await action.run(() => checkDomain(domain.id), null, "Could not check DNS");
+            if (!result) return;
+            if (result.data.verified) {
+              action.setStatus({ type: "success", text: `${domain.domain} is connected.` });
+              onChanged();
+            } else {
+              action.setStatus({ type: "error", text: result.data.problem ?? "Not verified yet." });
+            }
+          }}
+        >
+          Check now
+        </button>
       )}
       <StatusMessage status={action.status} />
     </li>

@@ -67,3 +67,14 @@ class DomainRead(BaseModel):
         description="TXT record to add at _cliq-verify.<domain> to prove ownership",
     )
     created_at: datetime
+
+
+class DomainCheckRead(BaseModel):
+    """The outcome of looking up a domain's verification TXT record."""
+
+    domain: DomainRead
+    verified: bool
+    record_name: str
+    expected: str
+    found: list[str]
+    problem: str | None

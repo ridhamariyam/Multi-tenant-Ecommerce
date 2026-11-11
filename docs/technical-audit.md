@@ -88,7 +88,7 @@ folder.
 | Merchant accounts, login, refresh rotation | COMPLETE AND TESTED (API + admin UI) |
 | Brand registration, switching, members, roles | COMPLETE AND TESTED (API + admin UI) |
 | Store settings, publish, custom domains (TXT generated, admin-verified) | COMPLETE AND TESTED (API + admin UI); TXT not checked automatically, logo/favicon are URLs (no upload yet) |
-| Platform admin (brands list, suspend, verify domain) | IMPLEMENTED (API) — **no UI** |
+| Platform admin (overview, brands, suspend/reinstate, domains with DNS check) | COMPLETE AND TESTED (API + UI), actions audited in the brand's log |
 | Password recovery, email verification for merchants | NOT IMPLEMENTED |
 | Onboarding checklist, demo data | NOT IMPLEMENTED |
 | Subscription plans / brand subscriptions | PARTIAL — models + service, **no API, no billing provider** |
@@ -142,7 +142,7 @@ per-host caching stays separated.
 | R3 | `NEXT_PUBLIC_SITE_URL` set in `.env` forces one site URL for every brand (canonical, sitemap). | Medium |
 | R4 | Scheduled jobs are `while true; sleep` containers: no retries with backoff, no dead-letter, no monitoring. | Medium |
 | R5 | Review-request and order emails are logged instead of sent. | Medium (product) |
-| R6 | Custom domains are verified by hand; no automated TXT check or certificate issuance. | Medium |
+| R6 | ~~Custom domains are verified by hand~~ TXT ownership is now checked by DNS (merchant *Check now*, operator *Check DNS*); certificate issuance for custom domains is still a deployment task. | Medium |
 | R7 | Uploaded images from before the S3 switch still live on a Docker volume. | Low |
 | R8 | A container `tws-ecommerce-core-jobs-1` from an unrelated checkout (`~/TWS/...`) runs on the same machine and network. Not part of this repo; left untouched. | Info |
 | R9 | Row-level security is not enabled; isolation relies on application queries + composite FKs (tested). | Accepted risk, documented |
@@ -183,7 +183,7 @@ checks, builds and an update to this table.
 | 1 | Storefront tenant resolution: host forwarding, same-origin API proxy, brand from `/storefront/resolve` (name, logo, colours, favicon, SEO), unknown/unpublished store pages | **Done** (2026-11-11) — see §7 |
 | 2 | Storefront dependency vulnerabilities (R2) | **Done** (2026-11-11) — see §7 |
 | 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | **Done** (2026-11-11) — see §7 |
-| 4 | Platform admin UI: brands, suspend/activate, verify domains | Planned |
+| 4 | Platform admin UI: brands, suspend/activate, verify domains | **Done** (2026-11-11) — see §7 |
 | 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | Planned |
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | Planned |
 | 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | Planned |
@@ -280,3 +280,35 @@ visited domain, and there is no billing.
   are covered by the Vitest journeys.)
 - Not yet: logo/favicon **upload** (URLs only), password reset (needs an email
   provider), email invitations for teammates without an account, onboarding checklist.
+
+### 2026-11-11 — Step 4: platform administration
+
+- Backend:
+  - `app/stores/dns_check.py`: looks up `_cliq-verify.<domain>` TXT (DNS only — no HTTP
+    to the domain, so no SSRF), 5 s timeout, failures reported, never treated as success.
+  - `POST /brand/domains/{id}/check` (owner/admin): a matching record verifies the domain;
+    logged in the brand's activity log.
+  - Platform: `GET /platform/admin/overview` (counts only: brands by status, live
+    stores, pending domains, merchant accounts — no orders/customers),
+    `GET /platform/admin/domains` (pending/verified, search, brand name),
+    `POST /platform/admin/domains/{id}/check`; brand list now returns suspension date
+    and reason.
+  - Every operator action (suspend, reinstate, verify by hand or by DNS) is written to the
+    affected brand's own activity log as `CliQ. platform (<email>)`, role
+    `PLATFORM_ADMIN` (`record_platform_action`).
+  - Tests: `tests/brands/test_platform_admin.py` (9; DNS stubbed) — brands + admin folders
+    127 passed.
+- Admin app: `/platform` (operators only; linked from the brand list): totals, brands
+  (search, status filter, suspend with required reason, reinstate), domains (pending by
+  default, *Check DNS* with the expected/found records, *Verify manually* with
+  confirmation). Merchants get *Check now* on their own domains. Tests: 3 platform + 6
+  merchant journeys; admin suite 217/217; build passes.
+- **Bug found and fixed in live testing:** a suspended or unpublished store stayed
+  online. The storefront cached `/storefront/resolve` for 60 s, and Next keeps serving
+  a cached success when the revalidation answers 404, so the stale "open" answer never
+  expired. The lookup is now `no-store` (one indexed query per render, shared through
+  React `cache()`). Verified live: suspending Northwind takes its storefront offline on
+  the next request; reinstating brings it back; the brand's token is refused (403) while
+  suspended; both actions appear in Northwind's activity log.
+- Test operator for local dev: in `backend/var/dev-test-accounts.md` (gitignored),
+  granted with `python -m app.commands.platform_admin grant`.

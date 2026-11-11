@@ -8,7 +8,11 @@ import { ApiError } from '@/lib/api/errors';
  *
  * The API answers from the visited domain (see lib/api/visited-host.ts), so
  * one deployment serves every brand: its own name, logo, colours and SEO.
- * Cached for a minute per domain (Next keys the fetch cache on headers).
+ *
+ * Never cached: Next keeps serving a cached success when a later revalidation
+ * fails, so a suspended or unpublished store (the API then answers 404) would
+ * stay online indefinitely. One indexed lookup per page render, shared by
+ * every component of that render through React's cache().
  */
 
 export interface StorefrontBrand {
@@ -47,10 +51,7 @@ export const FALLBACK_BRAND_NAME = 'CliQ.';
 
 export const getStorefront = cache(async (): Promise<StorefrontState> => {
   try {
-    const { brand, store } = await apiRequest<ResolveResponse>('/storefront/resolve', {
-      revalidate: 60,
-      tags: ['storefront'],
-    });
+    const { brand, store } = await apiRequest<ResolveResponse>('/storefront/resolve', { cache: 'no-store' });
     return {
       status: 'ok',
       brand: {

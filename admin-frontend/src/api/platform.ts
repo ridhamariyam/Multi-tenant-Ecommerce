@@ -1,5 +1,9 @@
 import type {
   AssignableRole,
+  DomainCheck,
+  PlatformBrand,
+  PlatformDomain,
+  PlatformOverview,
   BrandMembership,
   BrandRegistered,
   BrandToken,
@@ -50,3 +54,24 @@ export const addDomain = (domain: string, isPrimary = false) =>
   request<StoreDomain>("/brand/domains", { method: "POST", body: { domain, is_primary: isPrimary } });
 export const removeDomain = (domainId: string) =>
   request<null>(`/brand/domains/${encodeURIComponent(domainId)}`, { method: "DELETE" });
+export const checkDomain = (domainId: string) =>
+  request<DomainCheck>(`/brand/domains/${encodeURIComponent(domainId)}/check`, { method: "POST" });
+
+// CliQ. platform operators (merchant accounts with is_platform_admin).
+export const platformOverview = () => request<PlatformOverview>("/platform/admin/overview", { session: "platform" });
+export const platformBrands = (query: { page?: number; page_size?: number; search?: string; status?: string }) =>
+  request<PlatformBrand[]>("/platform/admin/brands", { query, session: "platform" });
+export const suspendBrand = (brandId: string, reason: string) =>
+  request<PlatformBrand>(`/platform/admin/brands/${encodeURIComponent(brandId)}/suspend`, {
+    method: "POST",
+    body: { reason },
+    session: "platform",
+  });
+export const reinstateBrand = (brandId: string) =>
+  request<PlatformBrand>(`/platform/admin/brands/${encodeURIComponent(brandId)}/activate`, { method: "POST", session: "platform" });
+export const platformDomains = (query: { page?: number; page_size?: number; status?: string; search?: string }) =>
+  request<PlatformDomain[]>("/platform/admin/domains", { query, session: "platform" });
+export const platformCheckDomain = (domainId: string) =>
+  request<DomainCheck>(`/platform/admin/domains/${encodeURIComponent(domainId)}/check`, { method: "POST", session: "platform" });
+export const platformVerifyDomain = (domainId: string) =>
+  request<StoreDomain>(`/platform/admin/domains/${encodeURIComponent(domainId)}/verify`, { method: "POST", session: "platform" });

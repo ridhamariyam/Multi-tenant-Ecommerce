@@ -71,6 +71,41 @@ async def record_activity(
     return entry
 
 
+PLATFORM_ROLE = "PLATFORM_ADMIN"
+
+
+async def record_platform_action(
+    session: AsyncSession,
+    tenant_id: UUID,
+    admin_email: str,
+    action: str,
+    entity_type: str,
+    entity_id: object | None = None,
+    *,
+    summary: str | None = None,
+    changes: Any = None,
+    request: Request | None = None,
+) -> AuditLog:
+    """A CliQ. platform operator acting on a brand, written to that brand's own
+    activity log so the brand can see it. The caller commits."""
+    entry = AuditLog(
+        tenant_id=tenant_id,
+        actor_id=None,  # platform accounts are not users of the brand
+        actor_name=f"CliQ. platform ({admin_email})"[:255],
+        actor_role=PLATFORM_ROLE,
+        action=action,
+        entity_type=entity_type,
+        entity_id=str(entity_id) if entity_id is not None else None,
+        summary=(summary or "")[:255] or None,
+        changes=_scrub(jsonable_encoder(changes)) if changes is not None else None,
+        ip_address=client_ip(request) if request is not None else None,
+    )
+    session.add(entry)
+    if request is not None:
+        request.state.audit_recorded = True
+    return entry
+
+
 async def record_login(
     session: AsyncSession,
     tenant_id: UUID,

@@ -7,6 +7,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
 import Brands from "./screens/Brands";
+import PlatformConsole from "./features/platform/PlatformConsole";
 import StoreSection from "./features/store/StoreSection";
 import TeamSection from "./features/store/TeamSection";
 import { Profile, Settings } from "./screens/Account";
@@ -45,6 +46,7 @@ export function AppRoutes() {
       <Route path="/login" element={<Navigate to="/signin" replace />} />
       <Route path="/register" element={<Register />} />
       <Route path="/brands" element={<Brands />} />
+      <Route path="/platform" element={<PlatformConsole />} />
       <Route
         element={
           <RequireAuth>

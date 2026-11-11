@@ -20,3 +20,4 @@
 .store-member { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .store-member-who { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; }
 .store-member-who span { overflow-wrap: anywhere; }
+.store-domain-check { margin-top: 10px; }

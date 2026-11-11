@@ -18,8 +18,9 @@ from app.core.config import get_settings
 from app.core.error_codes import StoreErrorCode
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.stores.constants import RESERVED_SUBDOMAINS
+from app.stores.dns_check import DnsCheck, check_ownership
 from app.stores.models import Store
-from app.stores.schemas import DomainCreate, DomainRead, StoreRead, StoreUpdate
+from app.stores.schemas import DomainCheckRead, DomainCreate, DomainRead, StoreRead, StoreUpdate
 from app.tenants.models import Tenant, TenantDomain
 
 
@@ -43,6 +44,17 @@ def store_read(store: Store) -> StoreRead:
         secondary_color=store.secondary_color,
         published=store.published,
         published_at=store.published_at,
+    )
+
+
+def domain_check_read(domain: TenantDomain, result: DnsCheck) -> DomainCheckRead:
+    return DomainCheckRead(
+        domain=domain_read(domain),
+        verified=result.verified,
+        record_name=result.record_name,
+        expected=result.expected,
+        found=result.found,
+        problem=result.problem,
     )
 
 
@@ -148,6 +160,27 @@ class StoreService:
         await self._commit_unique(StoreErrorCode.DOMAIN_TAKEN, "That domain is already in use")
         await self.session.refresh(domain)
         return domain
+
+    async def check_domain(self, domain_id: UUID) -> tuple[TenantDomain, DnsCheck, bool]:
+        """Look up the TXT record; a match verifies the domain (it then starts serving).
+
+        Returns the domain, the lookup, and whether this check is what verified it.
+        """
+        domain = await self.session.scalar(
+            select(TenantDomain).where(
+                TenantDomain.id == domain_id, TenantDomain.tenant_id == self.tenant.id
+            )
+        )
+        if domain is None:
+            raise NotFoundError("Domain not found", error_code=StoreErrorCode.DOMAIN_NOT_FOUND)
+        if domain.verified_at is not None:
+            return domain, DnsCheck(True, f"_cliq-verify.{domain.domain}", "", []), False
+        result = await check_ownership(domain.domain, domain.verification_token)
+        if result.verified:
+            domain.verified_at = datetime.now(timezone.utc)
+            await self.session.commit()
+            await self.session.refresh(domain)
+        return domain, result, result.verified
 
     async def remove_domain(self, domain_id: UUID) -> None:
         domain = await self.session.scalar(
