@@ -187,7 +187,8 @@ export async function cancelOrder(_previous: CheckoutState, formData: FormData):
     return toState(error);
   }
 
-  revalidatePath(`/order-success/${orderId}`);
+  revalidatePath('/order-confirmation/[orderNumber]', 'page');
+  revalidatePath('/account/orders/[orderNumber]', 'page');
   revalidatePath('/account/orders');
   return { status: 'success', message: 'Order cancelled' };
 }
@@ -228,7 +229,7 @@ export async function placeOrderWithAddress(
     return toState(error);
   }
 
-  revalidatePath('/my-orders');
+  revalidatePath('/account/orders');
   revalidatePath('/cart');
   revalidatePath('/', 'layout');
 

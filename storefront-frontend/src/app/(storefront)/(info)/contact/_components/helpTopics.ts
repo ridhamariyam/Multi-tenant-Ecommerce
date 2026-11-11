@@ -151,7 +151,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     icon: 'payments',
     summary:
       'You can pay with UPI, credit and debit cards, net banking, wallets or cash on delivery. Refund timelines differ based on the payment method.',
-    link: { label: 'View payment history', href: '/payment-history' },
+    link: { label: 'View your orders', href: '/account/orders' },
     questions: [
       {
         q: 'Which payment methods do you accept?',

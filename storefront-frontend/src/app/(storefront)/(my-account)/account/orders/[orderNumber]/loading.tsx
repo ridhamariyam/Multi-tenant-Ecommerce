@@ -1,1 +1,1 @@
-export { default } from '../../../../(order-details)/order-details/[orderId]/loading';
+export { default } from '@/features/order-details/[orderId]/loading';

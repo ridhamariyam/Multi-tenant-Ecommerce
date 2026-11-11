@@ -10,7 +10,6 @@ import {
   sessionCookieOptions,
 } from '@/lib/auth/cookies';
 import { SIGN_IN_PARAM } from '@/lib/auth/sign-in-url';
-import { LEGACY_ROUTES } from '@/constant/legacyRoutes';
 
 /**
  * Routes that need a signed-in customer.
@@ -18,17 +17,7 @@ import { LEGACY_ROUTES } from '@/constant/legacyRoutes';
  * /cart is deliberately absent: guests keep a cookie-backed cart that
  * is merged after sign-in, so they have to be able to see it.
  */
-const CUSTOMER_PREFIXES = [
-  '/account',
-  '/my-account',
-  '/check-out',
-  '/checkout',
-  '/order-confirmation',
-  '/my-orders',
-  '/order-success',
-  '/invoice',
-  '/payment-history',
-];
+const CUSTOMER_PREFIXES = ['/account', '/checkout', '/order-confirmation'];
 
 function matches(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -106,9 +95,6 @@ export async function middleware(request: NextRequest) {
       sessionCookieOptions(REFRESH_MAX_AGE_SECONDS),
     );
   }
-
-  // The template's demo pages stay reachable but out of search results.
-  if (LEGACY_ROUTES.has(pathname)) response.headers.set('X-Robots-Tag', 'noindex');
 
   if (refreshFailed) {
     response.cookies.delete(ACCESS_TOKEN_COOKIE);

@@ -49,8 +49,8 @@ function UserIcon() {
 const NAV_ITEMS = [
   { href: '/', label: 'Home', Icon: HomeIcon },
   { href: '/products', label: 'Shop', Icon: ShopIcon },
-  { href: '/shop-wishlist', label: 'Wishlist', Icon: HeartIcon },
-  { href: '/my-account', label: 'Account', Icon: UserIcon },
+  { href: '/wishlist', label: 'Wishlist', Icon: HeartIcon },
+  { href: '/account', label: 'Account', Icon: UserIcon },
 ] as const;
 
 export default function MobileBottomNav() {

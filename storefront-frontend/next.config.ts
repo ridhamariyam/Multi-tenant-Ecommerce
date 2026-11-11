@@ -20,6 +20,25 @@ const nextConfig: NextConfig = {
       })),
       /* The old ZEEN home is gone; the CliQ. runway at / is the home page. */
       { source: '/home', destination: '/', permanent: false },
+      /* Duplicate template pages, removed: each URL lands on the one real page. */
+      ...[
+        ['/cart-items', '/cart'],
+        ['/shop-cart', '/cart'],
+        ['/check-out', '/checkout'],
+        ['/my-account', '/account'],
+        ['/my-orders', '/account/orders'],
+        ['/payment-history', '/account/orders'],
+        ['/order-details/:id*', '/account/orders'],
+        ['/order-success/:id*', '/account/orders'],
+        ['/invoice/:id*', '/account/orders'],
+        ['/shop-wishlist', '/wishlist'],
+        ['/shop-list', '/products'],
+        ['/single-product/:id', '/products/:id'],
+        ['/login', '/signin'],
+        ['/signup', '/signin'],
+        ['/registration', '/signin'],
+        ['/otp-verification', '/signin'],
+      ].map(([source, destination]) => ({ source, destination, permanent: true })),
     ];
   },
   async headers() {

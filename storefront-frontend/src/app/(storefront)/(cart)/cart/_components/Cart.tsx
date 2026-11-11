@@ -104,7 +104,7 @@ function CartRow({
 }) {
   return (
     <div className={styles.row}>
-      <Link href={`/single-product/${item.product_id}`} className={styles.thumb} aria-label={item.product_name}>
+      <Link href={`/products/${item.product_id}`} className={styles.thumb} aria-label={item.product_name}>
         {item.image ? (
           <Image
             src={mediaUrl(item.image.url)}
@@ -121,7 +121,7 @@ function CartRow({
         <div className={styles.infoTop}>
           <div>
             <p className={styles.name}>
-              <Link href={`/single-product/${item.product_id}`}>{item.product_name}</Link>
+              <Link href={`/products/${item.product_id}`}>{item.product_name}</Link>
             </p>
             <p className={styles.variant}>{item.variant_name}</p>
           </div>
@@ -200,7 +200,7 @@ export default function Cart({ preview: serverPreview }: { preview: CheckoutPrev
           <p className={listingStyles.subtitle}>
             {items.length === 0
               ? 'Your cart is empty.'
-              : `${items.length} item${items.length === 1 ? '' : 's'} in your cart.`}
+              : `${cart.item_count} item${cart.item_count === 1 ? '' : 's'} in your cart.`}
           </p>
         </div>
       </section>

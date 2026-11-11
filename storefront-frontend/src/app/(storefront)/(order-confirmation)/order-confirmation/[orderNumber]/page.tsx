@@ -1,4 +1,4 @@
-import OrderSuccessPage from '../../../(order)/order-success/[orderId]/page';
+import OrderSuccessPage from '@/features/order-success/[orderId]/page';
 import { resolveOwnedOrderId } from '@/lib/orders/owned-order';
 
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ orderNumber: string }> }) {

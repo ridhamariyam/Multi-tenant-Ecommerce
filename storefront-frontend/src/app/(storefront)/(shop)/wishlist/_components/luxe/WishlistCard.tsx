@@ -57,7 +57,7 @@ export default function WishlistCard({ item }: Props) {
     };
   }, [item.product_id]);
 
-  const href = `/single-product/${item.product_id}`;
+  const href = `/products/${item.product_id}`;
 
   async function handleRemove() {
     const error = await removeItem(item.id);

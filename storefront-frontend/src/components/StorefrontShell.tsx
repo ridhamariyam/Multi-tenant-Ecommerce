@@ -8,7 +8,6 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './StorefrontToast.css';
 
-import LegacyTheme from '@/components/LegacyTheme';
 import ScrollToTopButton from '@/constant/ScrollToTopButton';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -74,7 +73,6 @@ export default function StorefrontShell({
 
   return (
     <>
-      <LegacyTheme />
       <AuthProvider user={user}>
         <SignInModalProvider>
           <CartProvider initialCart={cart}>

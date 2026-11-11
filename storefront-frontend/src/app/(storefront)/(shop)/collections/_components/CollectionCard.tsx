@@ -40,7 +40,7 @@ export default function CollectionCard({ product, colors, priority = false, wish
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const closeQuickAdd = useCallback(() => setQuickAddOpen(false), []);
 
-  const href = product.slug ? `/products/${encodeURIComponent(product.slug)}` : `/single-product/${product.id}`;
+  const href = product.slug ? `/products/${encodeURIComponent(product.slug)}` : `/products/${product.id}`;
   const saved = isProductSaved(product.id);
   const price = wishlistItem
     ? formatMoney(String(wishlistItem.unit_price), STOREFRONT_CURRENCY)

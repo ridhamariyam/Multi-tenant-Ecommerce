@@ -1,4 +1,4 @@
-import SingleProductPage from '../../single-product/[id]/page';
+import SingleProductPage from '@/features/product/ProductPage';
 
 export default async function ProductBySlugPage({
   params,

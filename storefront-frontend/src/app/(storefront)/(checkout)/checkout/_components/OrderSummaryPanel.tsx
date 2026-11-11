@@ -140,6 +140,8 @@ export default function OrderSummaryPanel({
   const [couponOpen, setCouponOpen] = useState(true);
   const [couponsModalOpen, setCouponsModalOpen] = useState(false);
 
+  // Count pieces, not lines, so this matches the header badge and cart page.
+  const pieces = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const appliedCode = preview?.coupon_code ?? null;
   const discount = preview ? Number(preview.discount_amount) : 0;
   const shippingAmount = preview ? Number(preview.shipping_amount) : 0;
@@ -156,7 +158,7 @@ export default function OrderSummaryPanel({
         <div className={styles.summaryHeader}>
           <p className={styles.summaryTitle}>Order Summary</p>
           <span className={styles.itemCount}>
-            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+            {pieces} {pieces === 1 ? 'item' : 'items'}
           </span>
         </div>
 

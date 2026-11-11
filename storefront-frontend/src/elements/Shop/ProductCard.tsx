@@ -60,7 +60,7 @@ export default function ProductCard({ product, rating = 0 }: ProductCardProps) {
 
   const href = product.slug
     ? `/products/${encodeURIComponent(product.slug)}`
-    : `/single-product/${product.id}`;
+    : `/products/${product.id}`;
   const image = product.primary_image;
   const saved = isProductSaved(product.id);
 

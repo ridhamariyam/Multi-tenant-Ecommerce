@@ -24,7 +24,7 @@ type Status = 'idle' | 'loading' | 'done' | 'error';
 function productHref(product: ProductStorefront): string {
   return product.slug
     ? `/products/${encodeURIComponent(product.slug)}`
-    : `/single-product/${product.id}`;
+    : `/products/${product.id}`;
 }
 
 /**

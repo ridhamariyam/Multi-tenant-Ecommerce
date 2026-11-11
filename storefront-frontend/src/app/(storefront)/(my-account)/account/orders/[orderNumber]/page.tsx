@@ -1,7 +1,7 @@
 import { unstable_rethrow } from 'next/navigation';
 
-import OrderDetailsPage from '../../../../(order-details)/order-details/[orderId]/page';
-import OrderLoadError from '../../../../(order-details)/order-details/_components/OrderLoadError';
+import OrderDetailsPage from '@/features/order-details/[orderId]/page';
+import OrderLoadError from '@/features/order-details/_components/OrderLoadError';
 import { resolveOwnedOrderId } from '@/lib/orders/owned-order';
 
 export default async function AccountOrderPage({ params }: { params: Promise<{ orderNumber: string }> }) {

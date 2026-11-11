@@ -38,7 +38,7 @@ function ProductRow({
 
   return (
     <article className={styles.item}>
-      <Link href={`/single-product/${item.product_id}`} className={styles.itemImage} aria-label={item.product_name}>
+      <Link href={`/products/${item.product_id}`} className={styles.itemImage} aria-label={item.product_name}>
         {item.image ? (
           <Image
             src={mediaUrl(item.image.url)}
@@ -53,7 +53,7 @@ function ProductRow({
 
       <div className={styles.itemInfo}>
         <div className={styles.itemTop}>
-          <Link href={`/single-product/${item.product_id}`} className={styles.itemName}>
+          <Link href={`/products/${item.product_id}`} className={styles.itemName}>
             {item.product_name}
           </Link>
           <button
@@ -113,7 +113,7 @@ function ProductRow({
 }
 
 function Recommendation({ product }: { product: ProductSummaryStorefront }) {
-  const href = product.slug ? `/products/${encodeURIComponent(product.slug)}` : `/single-product/${product.id}`;
+  const href = product.slug ? `/products/${encodeURIComponent(product.slug)}` : `/products/${product.id}`;
   return (
     <Link className={styles.recommendation} href={href}>
       <span className={styles.recommendationImage}>

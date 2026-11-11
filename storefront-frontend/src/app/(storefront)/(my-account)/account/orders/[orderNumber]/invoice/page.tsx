@@ -1,4 +1,4 @@
-import InvoicePage from '../../../../../(invoice)/invoice/[orderId]/page';
+import InvoicePage from '@/features/invoice/[orderId]/page';
 import { resolveOwnedOrderId } from '@/lib/orders/owned-order';
 
 export default async function AccountOrderInvoicePage({ params }: { params: Promise<{ orderNumber: string }> }) {

@@ -1,1 +1,1 @@
-export { default } from '../../../(myorders)/my-orders/page';
+export { default } from '@/features/my-orders/page';
