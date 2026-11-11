@@ -181,7 +181,7 @@ checks, builds and an update to this table.
 | # | Step | Status |
 |---|---|---|
 | 1 | Storefront tenant resolution: host forwarding, same-origin API proxy, brand from `/storefront/resolve` (name, logo, colours, favicon, SEO), unknown/unpublished store pages | **Done** (2026-11-11) — see §7 |
-| 2 | Storefront dependency vulnerabilities (R2) | Planned |
+| 2 | Storefront dependency vulnerabilities (R2) | **Done** (2026-11-11) — see §7 |
 | 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | Planned |
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | Planned |
 | 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | Planned |
@@ -239,3 +239,14 @@ visited domain, and there is no billing.
   sitemap; `nope.localhost:3000` shows the unavailable page; browser quick-add works
   through the proxy. Tests: `backend/tests/brands/test_forwarded_host.py` (5) — brands
   folder 54 passed. Storefront type check and production build pass.
+
+### 2026-11-11 — Step 2: storefront dependencies
+
+- 40 runtime and 6 dev dependencies left over from the original template were never
+  imported (swiper, katex, react-quill-new, uuid, bootstrap, jquery, fullcalendar,
+  apexcharts, datatables, …). Removed. The storefront now depends on next, react,
+  react-dom, react-toastify and wowjs only.
+- Next 15.5 pins postcss 8.4.31 (build-time only, our own CSS); overridden to ^8.5.23
+  via `overrides` in package.json.
+- `npm audit`: 0 vulnerabilities (was 7: 1 critical, 1 high). Type check, production
+  build and all 13 public pages pass; product page checked in the browser.
