@@ -1,0 +1,9 @@
+# Local rehearsal only (PLATFORM_ROOT_DOMAIN=localhost, local_certs): the
+# storefront's image optimizer must trust Caddy's own certificate authority.
+# Copy it first:  docker cp cliq-prodtest-caddy-1:/data/caddy/pki/authorities/local/root.crt deploy/.rehearsal-ca.crt
+services:
+  storefront:
+    environment:
+      NODE_EXTRA_CA_CERTS: /rehearsal-ca.crt
+    volumes:
+      - ./deploy/.rehearsal-ca.crt:/rehearsal-ca.crt:ro

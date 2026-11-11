@@ -190,7 +190,12 @@ services:
       - storefront
       - admin
       - api
-    networks: [internal]
+    networks:
+      internal:
+        # Inside Docker, media.<root> must reach Caddy, not the container itself
+        # (the storefront's image optimizer fetches product photos from it).
+        aliases:
+          - media.${PLATFORM_ROOT_DOMAIN}
 
   # Nightly database dumps kept on the backups volume (BACKUP_KEEP_DAYS).
   # Copy them off the server too -- see docs/deployment.md.

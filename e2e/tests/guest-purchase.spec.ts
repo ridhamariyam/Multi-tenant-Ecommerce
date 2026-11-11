@@ -8,6 +8,7 @@ test("a guest buys with cash on delivery and can track the order", async ({ page
   let added = false;
   for (const href of hrefs.slice(0, 8)) {
     await page.goto(`${STORE}${href}`);
+    await page.waitForLoadState("networkidle"); // hydrated, so the button really works
     const size = page.getByRole("combobox", { name: /size/i });
     if (await size.count()) {
       const values = await size.locator("option:not([disabled])").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value).filter(Boolean));

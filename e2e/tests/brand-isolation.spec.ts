@@ -13,8 +13,15 @@ test("each domain shows only its own brand", async ({ page }) => {
   expect(resolved.data.brand.name).toContain(SECOND_BRAND);
 });
 
-test("an unknown store address shows the not-found store page", async ({ page }) => {
-  const response = await page.goto(STORE.replace("://localhost", "://no-such-brand-e2e.localhost"));
-  expect(response?.status()).toBeGreaterThanOrEqual(200);
+test("an unknown store address gets no store", async ({ page }) => {
+  const unknown = STORE.replace(/:\/\/[^/:]+/, "://no-such-brand-e2e.localhost");
+  if (unknown.startsWith("https:")) {
+    // Production: the proxy refuses to get a certificate for an unknown name,
+    // so the connection itself fails -- nothing is served for it at all.
+    const failed = await page.goto(unknown).then(() => false, () => true);
+    expect(failed).toBe(true);
+    return;
+  }
+  await page.goto(unknown);
   await expect(page.getByText(/no store|isn.t available|not found/i).first()).toBeVisible();
 });

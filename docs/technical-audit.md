@@ -184,14 +184,14 @@ checks, builds and an update to this table.
 | 2 | Storefront dependency vulnerabilities (R2) | **Done** (2026-11-11) — see §7 |
 | 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | **Done** (2026-11-11) — see §7 |
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | **Done** (2026-11-11) — see §7 |
-| 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | **Written, partly verified** (2026-11-11) — full-stack rehearsal blocked by disk space; see §7 |
+| 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | **Done and rehearsed locally** (2026-11-12); not yet on a public server — see §7 |
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | **Done** (2026-11-11) — see §7 |
 | 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | **Done** (2026-11-11) — `e2e/`, runs on installed Chrome; see §7 |
 | 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | **Done** (2026-11-11) — Razorpay Subscriptions; live charge not verified; see §7 |
 | 9 | Merchant password reset + email provider adapter (transactional email) | **Done** (2026-11-11), SMTP delivery not live-verified (no SMTP account yet) — see §7 |
 | 10 | Customer segments/consent, abandoned carts, campaigns | **Done** (2026-11-11) — see §7 |
 | 11 | AI track: Celery worker service, try-on API + UI, credits API, lookbooks | **Done** (2026-11-11) — FASHN generation BLOCKED on API key; see §7 |
-| 12 | Load test (k6 or Locust) against a production-like stack | **Partly done** (2026-11-11) — script + dev baseline; production-like run pending the prod rehearsal |
+| 12 | Load test (k6 or Locust) against a production-like stack | **Done** (2026-11-12) on the local production stack — see §7 |
 
 ## 6. External dependencies still needed
 
@@ -411,4 +411,16 @@ a public server with real DNS or Let's Encrypt.
 ### Verification summary (2026-11-11, end of session)
 
 - Backend: 1,634 tests passed in 17 folders + 6 AI tests, 0 failures. Console: 227/227 Vitest. Both frontends: `next build` succeeds. E2E: 4/4 against the dev stack. Dev database migrated to `e3f5a7b9c1d2` (backup `backend/var/backups/db-before-plans-marketing-*.dump`).
+
+### Production rehearsal (2026-11-12)
+
+Full `docker-compose.prod.yml` stack built and run locally (Caddy local CA). Bugs it found, now fixed:
+
+1. **Every `python -m app.commands.*` failed** (`NoReferencedTableError`): commands did not load the model registry. `app/commands/__init__.py` now imports it; regression test `tests/core/test_commands_import.py` runs each command in a fresh process (10/12 failed before the fix).
+2. **Bootstrap store unreachable**: bootstrap created no `stores` row (so no certificate for `<slug>.<root>`) and no plan. It now creates a published store and puts it on the legacy unlimited plan (tested).
+3. **Product photos 500 in production**: the storefront's image optimizer fetched `media.<root>`, which inside a container resolves to itself. Caddy now has a `media.<root>` alias on the internal network; a local rehearsal additionally trusts Caddy's CA via `deploy/rehearsal.override.yml`.
+4. `SEED_ADMIN_PHONE` is required by bootstrap; the template now says so.
+5. E2E tests made robust for production builds (wait for hydration; on HTTPS an unknown host must get *no certificate*).
+
+Verified: all services healthy; migrate-before-API; bootstrap; console signup → brand → publish → on-demand certificate; unknown hosts refused; API private routes 404 from outside; scheduler jobs ok (disk-space job correctly alerting at <10% free on this laptop); backup + restore drill on real data; E2E 4/4 over HTTPS; load test (see deployment.md): 0 errors up to 60 concurrent shoppers, ~120 req/s ceiling with 2 API workers on a laptop.
 

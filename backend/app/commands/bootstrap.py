@@ -92,9 +92,47 @@ async def bootstrap_tenant(session: AsyncSession, settings: Settings) -> Tenant:
         print(f"Tenant admin already exists: {email}")
 
     await ensure_tenant_defaults(session, tenant, log=print)
+    await _ensure_store_and_plan(session, tenant, log=print)
 
     await session.commit()
     return tenant
+
+
+async def _ensure_store_and_plan(session: AsyncSession, tenant: Tenant, log=print) -> None:
+    """The operator's own store: reachable at <slug>.<root>, live, on the legacy unlimited plan.
+
+    Brands created in the console get these from brand registration; the
+    bootstrap store has to be given them here.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.stores.models import Store
+    from app.stores.service import check_subdomain_available
+    from app.subscriptions.constants import LEGACY_PLAN, SubscriptionStatus
+    from app.subscriptions.models import BrandSubscription
+    from app.subscriptions.service import plan_by_code
+
+    store = await session.scalar(select(Store).where(Store.tenant_id == tenant.id))
+    if store is None:
+        await check_subdomain_available(session, tenant.slug)
+        now = datetime.now(timezone.utc)
+        session.add(Store(tenant_id=tenant.id, name=tenant.name, subdomain=tenant.slug, published=True, published_at=now))
+        await session.flush()
+        log(f"Created store: {tenant.slug} (published)")
+    else:
+        log(f"Store already exists: {store.subdomain}")
+
+    if await session.scalar(select(BrandSubscription.id).where(BrandSubscription.tenant_id == tenant.id)) is None:
+        plan = await plan_by_code(session, LEGACY_PLAN)
+        now = datetime.now(timezone.utc)
+        session.add(
+            BrandSubscription(
+                tenant_id=tenant.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE.value,
+                current_period_start=now, current_period_end=now + timedelta(days=30),
+            )  # fmt: skip
+        )
+        await session.flush()
+        log(f"Put the store on the {plan.name} plan")
 
 
 async def bootstrap() -> None:

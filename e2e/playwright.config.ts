@@ -14,6 +14,8 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     channel: process.env.E2E_BROWSER_CHANNEL ?? "chrome",
+    // Local rehearsals use Caddy's own certificate authority.
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === "1",
     headless: true,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

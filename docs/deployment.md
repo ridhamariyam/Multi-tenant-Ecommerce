@@ -1,9 +1,9 @@
 # Deploying CliQ.
 
 One server runs the whole platform with Docker Compose. Everything below has
-been exercised on a laptop with `PLATFORM_ROOT_DOMAIN=localhost` (see
-"Rehearse locally"); it has **not** yet been run on a public server with real
-DNS and Let's Encrypt certificates.
+been exercised end to end on a laptop with `PLATFORM_ROOT_DOMAIN=localhost`
+(2026-11-12, see "Rehearse locally"); it has **not** yet been run on a public
+server with real DNS and Let's Encrypt certificates.
 
 ## What runs
 
@@ -160,11 +160,24 @@ The same stack runs on a laptop with Caddy's own certificate authority:
 ```sh
 cp .env.production.example .env.prodtest
 # PLATFORM_ROOT_DOMAIN=localhost, CADDY_EXTRA_GLOBAL_OPTIONS=local_certs,
-# STOREFRONT_URL_TEMPLATE=https://{subdomain}.{root}, random secrets
-CLIQ_ENV_FILE=.env.prodtest docker compose -p cliq-prodtest -f docker-compose.prod.yml \
-    --env-file .env.prodtest up -d --build
+# STOREFRONT_URL_TEMPLATE=https://{subdomain}.{root}, random secrets, SEED_ADMIN_PHONE
+P="-p cliq-prodtest -f docker-compose.prod.yml --env-file .env.prodtest"
+CLIQ_ENV_FILE=.env.prodtest docker compose $P up -d --build --wait
+CLIQ_ENV_FILE=.env.prodtest docker compose $P run --rm api python -m app.commands.bootstrap
+# Product photos are resized by the storefront, which must trust Caddy's local CA:
+docker cp cliq-prodtest-caddy-1:/data/caddy/pki/authorities/local/root.crt deploy/.rehearsal-ca.crt
+CLIQ_ENV_FILE=.env.prodtest docker compose $P -f deploy/rehearsal.override.yml up -d --wait storefront
 curl -k https://app.localhost/admin/signin
 ```
+
+Rehearsal results (2026-11-12): every service healthy; migrations ran before
+the API; bootstrap store live at `https://<slug>.localhost`; a brand created in
+the console got its certificate on first visit, an unknown name got none;
+private API routes 404 from outside; all scheduler jobs ran; backup + restore
+drill passed on real data; E2E 4/4 over HTTPS; load (laptop, 2 API workers,
+through Caddy/TLS): 25 shoppers 111 req/s p95 445 ms, 60 shoppers 121 req/s
+p95 919 ms, 0 errors. Throughput is bound by API CPU: raise `API_WORKERS`
+(≈ one per core) on a bigger server.
 
 Browsers resolve `*.localhost` to your machine; accept the local certificate (or
 trust Caddy's root CA from the `caddy_data` volume).

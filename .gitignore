@@ -37,3 +37,4 @@ storefront-frontend/certificates/
 .env.production
 .env.staging
 .env.prodtest
+deploy/.rehearsal-ca.crt

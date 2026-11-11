@@ -70,6 +70,7 @@ async def main() -> None:
     parser.add_argument("--host", default="localhost", help="store host to act as (X-Forwarded-Host)")
     parser.add_argument("--users", type=int, default=20)
     parser.add_argument("--seconds", type=int, default=60)
+    parser.add_argument("--insecure", action="store_true", help="skip TLS checks (local rehearsal CA)")
     args = parser.parse_args()
 
     stats: dict[str, list[float]] = defaultdict(list)
@@ -77,7 +78,7 @@ async def main() -> None:
     limited: dict[str, int] = defaultdict(int)
     limits = httpx.Limits(max_connections=args.users * 2)
     started = time.monotonic()
-    async with httpx.AsyncClient(base_url=args.base, timeout=30, limits=limits) as client:
+    async with httpx.AsyncClient(base_url=args.base, timeout=30, limits=limits, verify=not args.insecure) as client:
         stop_at = time.monotonic() + args.seconds
         await asyncio.gather(*(shopper(client, stop_at, stats, errors, limited, args.host) for _ in range(args.users)))
     elapsed = time.monotonic() - started

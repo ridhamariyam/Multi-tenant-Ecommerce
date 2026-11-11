@@ -41,6 +41,15 @@ async def test_production_bootstrap_creates_the_admin_and_no_demo_accounts(sessi
     ]
     domain = await session.scalar(select(TenantDomain.domain))
     assert domain == "bootstrap.test"
+    # Reachable at <slug>.<root> (the TLS allow-list needs the store) and unlimited.
+    from app.stores.models import Store
+    from app.subscriptions.service import SubscriptionService
+    from app.tenants.tls import certificate_allowed
+
+    store = await session.scalar(select(Store).where(Store.tenant_id == tenant.id))
+    assert store.subdomain == "bootstrap-store" and store.published is True
+    assert (await SubscriptionService(session, tenant.id).effective_plan()).code == "PRO"
+    assert await certificate_allowed(session, "bootstrap-store.localhost") is True
 
 
 async def test_bootstrap_is_safe_to_run_twice(session):
