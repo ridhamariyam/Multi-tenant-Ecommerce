@@ -188,3 +188,27 @@ describe("merchant accounts", () => {
     expect(await screen.findByText("Store settings are managed by signing in with a merchant account.")).toBeInTheDocument();
   });
 });
+
+describe("password reset", () => {
+  it("asks for a link without revealing whether the account exists", async () => {
+    const { calls } = mockFetch(route("POST", "/platform/auth/password/forgot", () => ok(null)));
+    renderAt("/forgot-password");
+
+    await userEvent.type(screen.getByLabelText("Email"), "owner@brand.example");
+    await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+
+    expect(await screen.findByText(/If an account uses that email/)).toBeInTheDocument();
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ email: "owner@brand.example" });
+  });
+
+  it("sets a new password from the emailed token", async () => {
+    const { calls } = mockFetch(route("POST", "/platform/auth/password/reset", () => ok(null)));
+    renderAt("/reset-password?token=abc123token");
+
+    await userEvent.type(screen.getByLabelText("New password"), "brand-new-pass");
+    await userEvent.click(screen.getByRole("button", { name: "Set new password" }));
+
+    expect(await screen.findByText(/Password changed/)).toBeInTheDocument();
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ token: "abc123token", password: "brand-new-pass" });
+  });
+});

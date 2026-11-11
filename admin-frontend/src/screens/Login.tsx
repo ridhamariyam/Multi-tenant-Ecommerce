@@ -92,6 +92,8 @@ function Login() {
           {mode === "merchant" && (
             <p className="login-footnote muted">
               New to CliQ? <Link to="/register">Create a merchant account</Link>
+              {" · "}
+              <Link to="/forgot-password">Forgot password?</Link>
             </p>
           )}
           {STOREFRONT_ORIGIN && (

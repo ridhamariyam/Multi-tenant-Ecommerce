@@ -73,5 +73,5 @@ def test_every_command_job_is_scheduled():
     from app.brands.platform_system import EXPECTED_JOBS
 
     jobs = {job.name: job.every_seconds for job in scheduler._jobs()}
-    assert set(jobs) == {"disk-space", "order-sheets", "expire-orders", "shipment-sync", "expire-carts", "review-requests"}
+    assert set(jobs) == {"disk-space", "emails", "order-sheets", "expire-orders", "shipment-sync", "expire-carts", "review-requests"}
     assert jobs == EXPECTED_JOBS  # the operator console knows every job

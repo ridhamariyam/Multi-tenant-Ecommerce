@@ -25,6 +25,7 @@ JOB_STATUS_KEY = "cliq:jobs"
 # The scheduler's jobs and default intervals (app/commands/scheduler.py).
 EXPECTED_JOBS = {
     "disk-space": 600,
+    "emails": 30,
     "order-sheets": 60,
     "expire-orders": 300,
     "shipment-sync": 900,
@@ -89,7 +90,7 @@ def providers() -> list[ProviderStatus]:
     rows = [
         ("razorpay", "Razorpay payments", bool(s.razorpay_key_id and s.razorpay_key_secret and s.razorpay_webhook_secret), "Online payments and refunds"),
         ("razorpay_subscriptions", "Razorpay Subscriptions", bool(getattr(s, "billing_razorpay_key_id", None) or (s.razorpay_key_id and getattr(s, "billing_webhook_secret", None))), "Brands paying their plan"),
-        ("smtp", "Email (SMTP)", bool(getattr(s, "smtp_host", None)), "Password resets, order emails, campaigns"),
+        ("smtp", "Email (SMTP)", bool(s.smtp_host), "Password resets, order emails, campaigns"),
         ("msg91", "MSG91", bool(s.msg91_auth_key), "Customer OTP sign-in"),
         ("google_oauth", "Google sign-in", bool(s.google_client_id), "Customer Google sign-in"),
         ("google_sheets", "Google Sheets", google_sheets.is_configured(), "Order export to Sheets"),

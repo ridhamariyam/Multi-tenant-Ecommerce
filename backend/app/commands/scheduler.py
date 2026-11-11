@@ -42,6 +42,7 @@ def _jobs() -> list[Job]:
     # Imported here so --check stays fast and needs no database settings.
     from app.commands.expire_carts import expire_carts
     from app.commands.expire_orders import expire_orders
+    from app.commands.send_emails import send_emails
     from app.commands.send_review_requests import send_review_requests
     from app.commands.sync_order_sheets import sync_order_sheets
     from app.commands.sync_shipments import sync_shipments
@@ -51,6 +52,7 @@ def _jobs() -> list[Job]:
 
     return [
         Job("disk-space", every("disk-space", 600), 30, check_disk_space),
+        Job("emails", every("emails", 30), 120, send_emails),
         Job("order-sheets", every("order-sheets", 60), 300, sync_order_sheets),
         Job("expire-orders", every("expire-orders", 300), 300, expire_orders),
         Job("shipment-sync", every("shipment-sync", 900), 600, sync_shipments),

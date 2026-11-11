@@ -2,7 +2,7 @@
 
 Run on a schedule, e.g. hourly:  python -m app.commands.send_review_requests
 
-Uses a no-op notifier until an email/SMS/WhatsApp channel is connected.
+Requests go out by email (queued in the outbox; sent by the emails job).
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import asyncio
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal, dispose_engine
+from app.notifications.orders import EmailReviewNotifier
 from app.ratings.service import ReviewRequestService
 from app.tenants.models import Tenant
 
@@ -21,7 +22,7 @@ async def send_review_requests() -> dict[str, int]:
     async with AsyncSessionLocal() as session:
         tenant_ids = (await session.scalars(select(Tenant.id))).all()
         for tenant_id in tenant_ids:
-            result = await ReviewRequestService(session, tenant_id).dispatch_due()
+            result = await ReviewRequestService(session, tenant_id).dispatch_due(EmailReviewNotifier(session))
             totals["sent"] += result["sent"]
             totals["completed"] += result["completed"]
     await dispose_engine()

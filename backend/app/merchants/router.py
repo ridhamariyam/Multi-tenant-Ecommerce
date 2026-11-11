@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
@@ -16,7 +17,9 @@ from app.merchants.schemas import (
     MerchantRegister,
     MerchantSession,
 )
+from app.merchants.constants import MIN_PASSWORD_LENGTH
 from app.merchants.service import MerchantAuthService
+from app.notifications import password_reset
 
 router = APIRouter(prefix="/platform/auth", tags=["Platform Auth"])
 
@@ -91,3 +94,34 @@ async def logout(data: MerchantRefresh, session: AsyncSession = Depends(get_db))
 @router.get("/me", response_model=ApiResponse[MerchantAccountRead], summary="The signed-in account")
 async def me(account: CurrentAccount) -> ApiResponse[MerchantAccountRead]:
     return ok(MerchantAccountRead.model_validate(account), message="Account")
+
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+
+class ResetPassword(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=128)
+
+
+@router.post(
+    "/password/forgot",
+    response_model=ApiResponse[None],
+    summary="Email a password reset link (same answer whether or not the account exists)",
+)
+async def forgot_password(
+    request: Request, data: ForgotPassword, session: AsyncSession = Depends(get_db)
+) -> ApiResponse[None]:
+    await _throttle(request, "merchant-forgot", str(data.email).lower())
+    await password_reset.request_reset(session, str(data.email))
+    return ok(None, message="If an account uses that email, a reset link is on its way.")
+
+
+@router.post("/password/reset", response_model=ApiResponse[None], summary="Set a new password from a reset link")
+async def reset_password(
+    request: Request, data: ResetPassword, session: AsyncSession = Depends(get_db)
+) -> ApiResponse[None]:
+    await _throttle(request, "merchant-reset", data.token[:16])
+    await password_reset.reset_password(session, data.token, data.password)
+    return ok(None, message="Password changed. Sign in with your new password.")

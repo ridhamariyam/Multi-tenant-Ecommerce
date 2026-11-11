@@ -239,6 +239,21 @@ class Settings(BaseSettings):
     # keys below). Every other brand connects its own account in its console.
     # Empty = only the seeded operator store (SEED_TENANT_SLUG).
     razorpay_platform_tenant_slugs: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    # Email (any SMTP provider: Google Workspace, Zoho, Brevo, Amazon SES SMTP,
+    # Mailgun...). Unset SMTP_HOST = emails wait in the outbox, nothing is sent.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = Field(default=None, repr=False)
+    # "starttls" (port 587), "ssl" (port 465) or "none" (local relay only).
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    smtp_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
+    email_from_address: str = "no-reply@localhost"
+    email_from_name: str = "CliQ."
+    email_max_attempts: int = Field(default=6, ge=1, le=20)
+    # Where merchants sign in (password-reset links). Unset = https://app.<root>/admin.
+    console_url: str | None = None
+
     razorpay_key_id: str | None = None
     razorpay_key_secret: str | None = None
     razorpay_webhook_secret: str | None = None
@@ -278,6 +293,14 @@ class Settings(BaseSettings):
     @property
     def platform_payment_slugs(self) -> set[str]:
         return set(self.razorpay_platform_tenant_slugs or [self.seed_tenant_slug])
+
+    @property
+    def console_base_url(self) -> str:
+        if self.console_url:
+            return self.console_url.rstrip("/")
+        if self.platform_root_domain in {"localhost", "127.0.0.1"}:
+            return "http://localhost:3001/admin"
+        return f"https://app.{self.platform_root_domain}/admin"
 
     @property
     def json_logs(self) -> bool:

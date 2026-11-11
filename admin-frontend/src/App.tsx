@@ -5,6 +5,7 @@ import { RequireAuth, RequireBrand, RequirePermission } from "./auth/Guards";
 import { P } from "./auth/permissions";
 import AdminLayout from "./layouts/AdminLayout";
 import Login from "./screens/Login";
+import { ForgotPassword, ResetPassword } from "./screens/PasswordReset";
 import Register from "./screens/Register";
 import Brands from "./screens/Brands";
 import PlatformConsole from "./features/platform/PlatformConsole";
@@ -45,6 +46,8 @@ export function AppRoutes() {
       <Route path="/signin" element={<Login />} />
       <Route path="/login" element={<Navigate to="/signin" replace />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/brands" element={<Brands />} />
       <Route path="/platform" element={<PlatformConsole />} />
       <Route

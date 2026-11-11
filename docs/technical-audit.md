@@ -188,7 +188,7 @@ checks, builds and an update to this table.
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | **Done** (2026-11-11) — see §7 |
 | 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | Planned |
 | 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | Planned (billing provider BLOCKED until chosen) |
-| 9 | Merchant password reset + email provider adapter (transactional email) | Planned (provider BLOCKED until chosen) |
+| 9 | Merchant password reset + email provider adapter (transactional email) | **Done** (2026-11-11), SMTP delivery not live-verified (no SMTP account yet) — see §7 |
 | 10 | Customer segments/consent, abandoned carts, campaigns | Planned |
 | 11 | AI track: Celery worker service, try-on API + UI, credits API, lookbooks | Planned last (FASHN key BLOCKED) |
 | 12 | Load test (k6 or Locust) against a production-like stack | Planned |
@@ -365,3 +365,12 @@ a public server with real DNS or Let's Encrypt.
 - Storefront: `/storefront/resolve` returns `payments.online` + public `razorpay_key_id`; online methods are disabled with "Not offered by this store yet" when off; Checkout uses the brand's key and name.
 - Decision (user): guests may pay online. Guest checkout offers UPI/cards/net banking; `POST /payments/razorpay/verify-guest` (signature-proven, guest orders only, rate limited).
 - Verified live (dev, Razorpay test mode): guest order ORD-100010 paid by test net banking → PAID in DB; Northwind (no account) resolves `online: false`. Tests: 40 backend (new `tests/payments/test_brand_gateway.py`), 5 console.
+
+### Step 9 — Email (SMTP) and merchant password reset (2026-11-11)
+
+- Decision (user): generic SMTP. `email_outbox` table (migration `c9d3e1f5a7b2`): emails are queued inside the transaction that causes them, deduplicated by key, and delivered by the scheduler's `emails` job every 30 s with exponential backoff; FAILED after `EMAIL_MAX_ATTEMPTS`. Unset `SMTP_HOST` = emails wait, nothing is lost.
+- Order confirmation to the customer once an order is a sale (same rule as the Sheets export: COD at placement, online once paid), from the brand's name with Reply-To the brand's contact email. Review requests now go by email (they were a no-op before).
+- Merchant "Forgot password?": `POST /platform/auth/password/forgot` (same answer for unknown emails, rate limited) and `/password/reset` (single-use token stored as SHA-256, 1 hour, revokes every refresh token). Console screens `/forgot-password` and `/reset-password`.
+- Verified live (dev): reset request and 3 order confirmations queued in the outbox; nothing sent (no SMTP configured). Tests: 8 email/reset backend tests + 2 console tests.
+- Not verified: delivery through a real SMTP server — needs your SMTP account.
+
