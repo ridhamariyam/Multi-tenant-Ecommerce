@@ -32,3 +32,8 @@ backend/var/
 
 .env*.local
 storefront-frontend/certificates/
+
+# Production / staging settings hold real secrets.
+.env.production
+.env.staging
+.env.prodtest

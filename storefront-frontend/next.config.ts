@@ -9,8 +9,22 @@ const SECURITY_HEADERS = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
+/* Hosts product images may come from: the API (uploads served at /media) and,
+   with S3 storage, the bucket's public URL. Both are read at build time. */
+function imageHost(url: string | undefined) {
+  if (!url) return [];
+  try {
+    const { protocol, hostname, port } = new URL(url);
+    return [{ protocol: protocol.replace(':', '') as 'http' | 'https', hostname, ...(port ? { port } : {}) }];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  /* A self-contained server (node server.js) for the Docker image. */
+  output: 'standalone',
   /* Trace server files from this app, not a stray lockfile higher up the disk. */
   outputFileTracingRoot: path.join(__dirname),
   /* Browser API calls go through the storefront's own domain, so the API
@@ -68,9 +82,11 @@ const nextConfig: NextConfig = {
     /* Product images are served by the API host, and the seed data by picsum. */
 
     remotePatterns: [
+      ...imageHost(process.env.NEXT_PUBLIC_API_URL),
+      ...imageHost(process.env.NEXT_PUBLIC_MEDIA_URL),
+      // Demo catalogue images (seed data).
       { protocol: "https", hostname: "picsum.photos" },
       { protocol: "https", hostname: "fastly.picsum.photos" },
-      { protocol: "http", hostname: "localhost", port: "58000" },
       { protocol: "https", hostname: "i.pinimg.com" },
     ],
   },

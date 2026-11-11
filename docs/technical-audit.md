@@ -102,13 +102,13 @@ folder.
 | Item | Status |
 |---|---|
 | Backend image + healthchecks | IMPLEMENTED |
-| Storefront / admin Docker images | NOT IMPLEMENTED |
-| Reverse proxy, TLS, wildcard subdomains, custom-domain certs | NOT IMPLEMENTED |
-| Celery worker / beat services | NOT IMPLEMENTED (scheduled jobs are shell `while sleep` loops) |
+| Storefront / admin Docker images | IMPLEMENTED, NOT BUILT (disk full during build) |
+| Reverse proxy, TLS, wildcard subdomains, custom-domain certs | IMPLEMENTED (Caddy, on-demand TLS gated by the API), config validated; NOT LIVE-VERIFIED |
+| Scheduled jobs | COMPLETE AND TESTED: one scheduler process (all 5 jobs, timeouts, JSON logs, healthcheck); Celery worker for AI still not deployed |
 | CI pipeline | NOT IMPLEMENTED |
 | Error monitoring (Sentry or similar), metrics | NOT IMPLEMENTED |
 | Structured logging | PARTIAL — request ids exist; logs are plain text |
-| Backups | MANUAL — `pg_dump` taken before each migration; no schedule, no restore drill |
+| Backups | COMPLETE AND TESTED locally: nightly dump service + restore drill (passes on a real dump, fails on a corrupt one); off-site copy is an operator task |
 | Staging / production configs | PARTIAL — one `.env`; `ENVIRONMENT` switch exists |
 | End-to-end tests (Playwright) | NOT IMPLEMENTED |
 | Load tests | NOT IMPLEMENTED — no capacity figures exist |
@@ -137,10 +137,10 @@ per-host caching stays separated.
 
 | # | Finding | Severity |
 |---|---|---|
-| R1 | Dev database was two migrations behind the code (fixed today; API 500'd on products after rebuild). There is no migrate-on-deploy step. | High (ops) |
+| R1 | Dev database was two migrations behind the code (fixed). Production now runs `migrate` to completion before the API starts. | Resolved in prod compose |
 | R2 | Storefront dependencies: 7 known vulnerabilities (`npm audit --omit=dev`): critical `swiper`, high `katex`/`postcss`, moderate `uuid`, `quill`. Admin: 0. | High |
 | R3 | `NEXT_PUBLIC_SITE_URL` set in `.env` forces one site URL for every brand (canonical, sitemap). | Medium |
-| R4 | Scheduled jobs are `while true; sleep` containers: no retries with backoff, no dead-letter, no monitoring. | Medium |
+| R4 | ~~Scheduled jobs are `while sleep` loops~~ Production uses `app.commands.scheduler` (contained failures, timeouts, JSON logs, healthcheck). No alerting yet. | Low |
 | R5 | Review-request and order emails are logged instead of sent. | Medium (product) |
 | R6 | ~~Custom domains are verified by hand~~ TXT ownership is now checked by DNS (merchant *Check now*, operator *Check DNS*); certificate issuance for custom domains is still a deployment task. | Medium |
 | R7 | Uploaded images from before the S3 switch still live on a Docker volume. | Low |
@@ -184,7 +184,7 @@ checks, builds and an update to this table.
 | 2 | Storefront dependency vulnerabilities (R2) | **Done** (2026-11-11) — see §7 |
 | 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | **Done** (2026-11-11) — see §7 |
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | **Done** (2026-11-11) — see §7 |
-| 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | Planned |
+| 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | **Written, partly verified** (2026-11-11) — full-stack rehearsal blocked by disk space; see §7 |
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | Planned |
 | 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | Planned |
 | 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | Planned (billing provider BLOCKED until chosen) |
@@ -312,3 +312,35 @@ visited domain, and there is no billing.
   suspended; both actions appear in Northwind's activity log.
 - Test operator for local dev: in `backend/var/dev-test-accounts.md` (gitignored),
   granted with `python -m app.commands.platform_admin grant`.
+
+### 2026-11-11 — Step 5: production deployment (written; partly verified)
+
+Files: `docker-compose.prod.yml`, `deploy/Caddyfile`, `deploy/backup/backup.sh`,
+`deploy/backup/restore-drill.sh`, `storefront-frontend/Dockerfile`,
+`admin-frontend/Dockerfile` (+ `.dockerignore`s), `.env.production.example`,
+`docs/deployment.md`; backend `app/commands/scheduler.py`, `app/tenants/tls.py`.
+
+- Only Caddy publishes ports. `app.<root>` → console, `api.<root>` → webhooks/media/health
+  only, `media.<root>` → MinIO, `<root>` → redirect, every other host → storefront.
+  Storefront certificates are issued on demand only for hosts the API approves
+  (`/api/v1/internal/tls-allowed`: platform hosts, active brands' subdomains, verified
+  custom domains).
+- `migrate` (`alembic upgrade head`) must complete before `api` starts.
+- Backend production image installs `requirements.txt` only (build arg); dev/test image
+  unchanged. Frontends: Next `output: 'standalone'`, non-root user, healthchecks.
+  Storefront image hosts come from the configured API/media URLs. Admin now sends
+  security headers (HSTS, nosniff, `X-Frame-Options: DENY`, …).
+- `.env.production`, `.env.staging`, `.env.prodtest` are git-ignored.
+
+Verified:
+- Caddy validates the config for a real domain and for `localhost`.
+- Tests: scheduler (6) + TLS allow-list (5) + platform/resolve (14) = 25 passed.
+- Scheduler ran against the dev stack: all 5 jobs `ok`, `--check` healthy.
+- Backup script dumped the dev DB; restore drill restored it into a throwaway
+  PostgreSQL (migration a7c4e91b2d55, 2 brands, 10 products, 7 orders, 12 customers,
+  totals consistent) and exits 1 on a truncated dump.
+
+**Not verified:** building the three production images and running the whole stack
+behind Caddy. The build ran out of disk (the machine had 0 MB free; ~0.9 GB after
+clearing Docker's build cache). Needs ~4 GB free, or a server. Nothing has been run on
+a public server with real DNS or Let's Encrypt.

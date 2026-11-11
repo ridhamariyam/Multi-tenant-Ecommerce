@@ -1,0 +1,211 @@
+# CliQ. production stack.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Only Caddy publishes ports (80/443). The API, database, Redis and object
+# storage are reachable only on the internal network. Every deploy runs
+# `migrate` (alembic upgrade head) to completion before the API starts; if a
+# migration fails, the old API keeps running and nothing new is started.
+# See docs/deployment.md.
+
+name: cliq
+
+x-backend: &backend
+  build:
+    context: ./backend
+    args:
+      REQUIREMENTS: requirements.txt
+  image: cliq-api:${CLIQ_VERSION:-latest}
+  env_file: ${CLIQ_ENV_FILE:-.env.production}
+  environment: &backend-env
+    ENVIRONMENT: production
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    REDIS_URL: redis://redis:6379/0
+    TRUST_FORWARDED_HOST: "true"
+    # Only Caddy and the frontends talk to the API (private network).
+    FORWARDED_ALLOW_IPS: "*"
+  restart: unless-stopped
+  networks: [internal]
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  # Object storage. Point STORAGE_BACKEND=s3 / S3_* at AWS S3 (or R2, Spaces)
+  # instead and remove this service; MinIO here keeps a single-server install
+  # self-contained.
+  minio:
+    image: bitnamilegacy/minio:2025.5.24
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+      # Objects are publicly readable (product images); writes need credentials
+      # or a presigned upload from the API.
+      MINIO_DEFAULT_BUCKETS: ${S3_BUCKET}:download
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [internal]
+
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      WEB_CONCURRENCY: ${API_WORKERS:-2}
+    volumes:
+      - uploads_data:/app/var/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # All periodic jobs (order expiry, shipment sync, Sheets export, cart
+  # expiry, review requests) in one process; see app/commands/scheduler.py.
+  scheduler:
+    <<: *backend
+    command: ["python", "-m", "app.commands.scheduler"]
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.commands.scheduler", "--check"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  storefront:
+    build:
+      context: ./storefront-frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${PLATFORM_ROOT_DOMAIN}/api/v1
+        API_INTERNAL_URL: http://api:8000/api/v1
+        NEXT_PUBLIC_MEDIA_URL: ${S3_PUBLIC_BASE_URL:-}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_MSG91_WIDGET_ID: ${NEXT_PUBLIC_MSG91_WIDGET_ID:-}
+        NEXT_PUBLIC_MSG91_TOKEN_AUTH: ${NEXT_PUBLIC_MSG91_TOKEN_AUTH:-}
+    image: cliq-storefront:${CLIQ_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:8000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [internal]
+
+  admin:
+    build:
+      context: ./admin-frontend
+      args:
+        NEXT_PUBLIC_API_ORIGIN: http://api:8000
+        NEXT_PUBLIC_PLATFORM_ROOT_DOMAIN: ${PLATFORM_ROOT_DOMAIN}
+    image: cliq-admin:${CLIQ_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [internal]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PLATFORM_ROOT_DOMAIN: ${PLATFORM_ROOT_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      CADDY_EXTRA_GLOBAL_OPTIONS: ${CADDY_EXTRA_GLOBAL_OPTIONS:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - storefront
+      - admin
+      - api
+    networks: [internal]
+
+  # Nightly database dumps kept on the backups volume (BACKUP_KEEP_DAYS).
+  # Copy them off the server too -- see docs/deployment.md.
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./deploy/backup/backup.sh:/usr/local/bin/backup.sh:ro
+      - backups:/backups
+    entrypoint: ["sh", "/usr/local/bin/backup.sh", "--loop"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal: {}
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:
+  backups:

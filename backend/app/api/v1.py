@@ -17,6 +17,7 @@ from app.coupons import router as coupons
 from app.customers import router as customers
 from app.dashboard import router as dashboard
 from app.integrations import router as integrations
+from app.tenants import tls as tenant_tls
 from app.merchants import router as merchants
 from app.orders import router as orders
 from app.payments import router as payments
@@ -80,5 +81,6 @@ for router in (
     integrations.router,
     cms.router,
     cms.storefront_router,
+    tenant_tls.router,
 ):
     api_router.include_router(router)

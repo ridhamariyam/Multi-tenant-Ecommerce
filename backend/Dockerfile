@@ -13,8 +13,11 @@ RUN apt-get update \
 
 RUN pip install --no-cache-dir --upgrade pip==26.2.1
 
+# Production builds pass REQUIREMENTS=requirements.txt (no test tooling);
+# the default keeps pytest in the image that scripts/test.sh runs.
+ARG REQUIREMENTS=requirements-dev.txt
 COPY requirements.txt requirements-dev.txt ./
-RUN pip install --no-cache-dir -r requirements-dev.txt
+RUN pip install --no-cache-dir -r ${REQUIREMENTS}
 
 COPY . .
 
@@ -24,4 +27,5 @@ USER appuser
 
 EXPOSE 8000
 
+# Worker processes: WEB_CONCURRENCY (uvicorn reads it), default 1.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
