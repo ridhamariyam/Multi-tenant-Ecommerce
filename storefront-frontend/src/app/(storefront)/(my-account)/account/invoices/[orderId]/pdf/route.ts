@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAccessToken } from '@/lib/auth/session';
 import { signInUrl } from '@/lib/auth/sign-in-url';
-import { apiBaseUrl } from '@/lib/env';
+import { serverApiUrl } from '@/lib/env';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,8 +23,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   let upstream: Response;
   try {
-    upstream = await fetch(`${apiBaseUrl()}/orders/${orderId}/invoice/pdf`, {
-      headers: { Accept: 'application/pdf', Authorization: `Bearer ${token}` },
+    upstream = await fetch(`${serverApiUrl()}/orders/${orderId}/invoice/pdf`, {
+      headers: {
+        Accept: 'application/pdf',
+        Authorization: `Bearer ${token}`,
+        // Which brand's store this is; the customer's token only works there.
+        'X-Forwarded-Host': request.headers.get('host') ?? '',
+      },
       cache: 'no-store',
     });
   } catch {

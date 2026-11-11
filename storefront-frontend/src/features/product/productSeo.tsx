@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { collectionPath } from '@/app/(storefront)/(shop)/collections/_components/collectionQuery';
 import { categorySlug } from '@/lib/catalogue/slug';
 import { mediaUrl } from '@/lib/media';
-import { absoluteUrl, DEFAULT_OG_IMAGE, JsonLd, plainText, SITE_NAME, withoutBrand } from '@/lib/seo';
+import { absoluteUrl, DEFAULT_OG_IMAGE, JsonLd, plainText, withoutBrand } from '@/lib/seo';
 import type { ProductStorefront } from '@/types/catalogue';
 import type { RatingSummary } from '@/types/reviews';
 
@@ -13,12 +13,12 @@ function orderedImages(product: ProductStorefront) {
   );
 }
 
-function describe(product: ProductStorefront): string {
+function describe(product: ProductStorefront, storeName: string): string {
   return (
     plainText(product.seo_description) ||
     plainText(product.short_description) ||
     plainText(product.description) ||
-    `Shop ${product.name} from ${SITE_NAME}.`
+    `Shop ${product.name} from ${storeName}.`
   );
 }
 
@@ -27,9 +27,9 @@ export function productPath(product: ProductStorefront): string {
 }
 
 /** Title, description, canonical link and share card for a product page. */
-export function productMetadata(product: ProductStorefront): Metadata {
-  const description = describe(product);
-  const title = withoutBrand(product.seo_title?.trim() || '') || product.name;
+export function productMetadata(product: ProductStorefront, storeName: string): Metadata {
+  const description = describe(product, storeName);
+  const title = withoutBrand(product.seo_title?.trim() || '', storeName) || product.name;
   const images = orderedImages(product)
     .slice(0, 4)
     .map(image => ({ url: mediaUrl(image.url), alt: image.alt_text || product.name }));
@@ -47,9 +47,11 @@ export function productMetadata(product: ProductStorefront): Metadata {
 export async function ProductJsonLd({
   product,
   summary,
+  storeName,
 }: {
   product: ProductStorefront;
   summary: RatingSummary | null;
+  storeName: string;
 }) {
   const url = await absoluteUrl(productPath(product));
   const collectionUrl = await absoluteUrl(collectionPath(categorySlug(product.category.name)));
@@ -70,11 +72,11 @@ export async function ProductJsonLd({
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: describe(product),
+    description: describe(product, storeName),
     image: orderedImages(product).map(image => mediaUrl(image.url)),
     url,
     sku: product.variants[0]?.sku,
-    brand: { '@type': 'Brand', name: product.brand || SITE_NAME },
+    brand: { '@type': 'Brand', name: product.brand || storeName },
     category: product.category.name,
     ...(product.country_of_origin ? { countryOfOrigin: product.country_of_origin } : {}),
     ...(product.fabric ? { material: product.fabric } : {}),

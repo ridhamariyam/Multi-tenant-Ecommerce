@@ -3,6 +3,8 @@
 import Link from 'next/link';
 
 import styles from '@/app/(storefront)/(home)/home/_components/luxe/Home.module.css';
+import BrandLogo from '@/components/BrandLogo';
+import { useBrand } from '@/context/BrandContext';
 
 const SHOP_LINKS = [
   { label: 'New Arrivals', href: '/products' },
@@ -28,6 +30,7 @@ const PAYMENTS = ['UPI', 'Cards', 'Net Banking', 'Cash on Delivery'];
  * columns, closed by the CliQ lockup in Champagne Gold.
  */
 function HomeFooter() {
+  const brand = useBrand();
   return (
     <footer className={styles.homeFooter}>
       <div className={styles.footerContact}>
@@ -45,7 +48,7 @@ function HomeFooter() {
         <div>
           <p className={styles.footerLabel}>Contact</p>
           <p className={styles.footerBig}>
-            <Link href="/contact">Write to the CliQ studio</Link>
+            <Link href="/contact">Write to the {brand.name} team</Link>
           </p>
         </div>
         <ul className={styles.footerLinks}>
@@ -65,10 +68,16 @@ function HomeFooter() {
       </div>
 
       <div className={styles.footerBottom}>
-        <span className={styles.footerLogoLockup} role="img" aria-label="CliQ.">
-          <span className={styles.footerLogoSymbol} />
-          <span className={styles.footerLogoWordmark} />
-        </span>
+        <BrandLogo
+          cliqMark={
+            <span className={styles.footerLogoLockup} role="img" aria-label={brand.name}>
+              <span className={styles.footerLogoSymbol} />
+              <span className={styles.footerLogoWordmark} />
+            </span>
+          }
+          className={styles.brandLogoImage}
+          textClassName={styles.footerBrandText}
+        />
         <div>
           <p className={styles.footerLabel}>We accept</p>
           <ul className={styles.footerPayments}>

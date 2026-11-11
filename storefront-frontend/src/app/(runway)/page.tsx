@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { SignInModalProvider } from '@/context/SignInModalContext';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { getCart } from '@/lib/cart/read';
-import { absoluteUrl, DEFAULT_OG_IMAGE, JsonLd, SITE_NAME } from '@/lib/seo';
+import { absoluteUrl, DEFAULT_OG_IMAGE, JsonLd } from '@/lib/seo';
+import { brandName } from '@/lib/storefront/brand';
 
 import RunwayClient from './_runway/RunwayClient';
 import { loadRunwayLooks } from './_runway/load';
@@ -13,12 +15,15 @@ import { renderRunwayMarkup } from './_runway/markup';
 const HOME_DESCRIPTION =
   'Six complete looks, styled head to toe. Explore the runway, tap a pin to see each piece, and add the whole look to your bag.';
 
-export const metadata: Metadata = {
-  title: { absolute: 'CliQ. — Try the Look' },
-  description: HOME_DESCRIPTION,
-  alternates: { canonical: '/' },
-  openGraph: { title: 'CliQ. — Try the Look', description: HOME_DESCRIPTION, url: '/', images: [DEFAULT_OG_IMAGE] },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const title = `${await brandName()} — Try the Look`;
+  return {
+    title: { absolute: title },
+    description: HOME_DESCRIPTION,
+    alternates: { canonical: '/' },
+    openGraph: { title, description: HOME_DESCRIPTION, url: '/', images: [DEFAULT_OG_IMAGE] },
+  };
+}
 
 /** The cart badge and account link are per visitor, so this page is never statically cached. */
 export const dynamic = 'force-dynamic';
@@ -29,18 +34,22 @@ export default async function RunwayHome() {
     getCart().catch(() => null),
     getCurrentUser().catch(() => null),
   ]);
+  // The curated looks are CliQ.'s; a store with none of their products
+  // opens on its catalogue until it has a homepage of its own.
+  if (looks.length === 0) redirect('/products');
+
   const first = looks[0]?.model.src;
-  const home = await absoluteUrl('/');
+  const [home, storeName] = await Promise.all([absoluteUrl('/'), brandName()]);
 
   return (
     <div className="cliq">
       <JsonLd
         data={[
-          { '@context': 'https://schema.org', '@type': 'Organization', name: SITE_NAME, url: home, logo: `${home}icon.svg` },
+          { '@context': 'https://schema.org', '@type': 'Organization', name: storeName, url: home, logo: `${home}icon.svg` },
           {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
-            name: SITE_NAME,
+            name: storeName,
             url: home,
             potentialAction: {
               '@type': 'SearchAction',

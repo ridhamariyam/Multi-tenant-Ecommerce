@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import BrandLogo from '@/components/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
+import { useBrand } from '@/context/BrandContext';
 import { useSignInModal } from '@/context/SignInModalContext';
 import { addCartItem } from '@/lib/cart/actions';
 
@@ -23,6 +25,7 @@ interface AddRequest {
  */
 export default function RunwayClient({ initialCount }: { initialCount: number }) {
   const { isSignedIn } = useAuth();
+  const brand = useBrand();
   const { openSignIn } = useSignInModal();
   const [count, setCount] = useState(initialCount);
   const [toast, setToast] = useState<string | null>(null);
@@ -77,8 +80,8 @@ export default function RunwayClient({ initialCount }: { initialCount: number })
   return (
     <>
       <header className="site-header shopify-section-group-header-group">
-        <a href="/" className="brand" aria-label="CliQ. home">
-          CliQ.
+        <a href="/" className="brand" aria-label={`${brand.name} home`}>
+          <BrandLogo cliqMark="CliQ." className="brand-logo" />
         </a>
         <nav aria-label="Main navigation">
           <a href="/">Home</a>

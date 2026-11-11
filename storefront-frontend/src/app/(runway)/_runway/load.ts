@@ -119,5 +119,5 @@ export async function loadRunwayLooks(): Promise<RunwayLook[]> {
     const priced = pieces.filter(p => !p.soldOut && p.price !== null);
     const total = priced.length ? priced.reduce((sum, p) => sum + (p.price ?? 0), 0) : null;
     return { name: look.name, model: look.model, pieces, total, totalLabel: money(total) };
-  });
+  }).filter(look => look.pieces.length > 0); // another brand's store has none of these products
 }

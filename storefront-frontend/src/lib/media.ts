@@ -1,4 +1,4 @@
-import { apiBaseUrl } from '@/lib/env';
+import { publicApiOrigin } from '@/lib/env';
 
 /**
  * Absolute URL for an image the API serves.
@@ -15,6 +15,6 @@ export function mediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:')) return url;
 
-  const origin = new URL(apiBaseUrl()).origin;
+  const origin = publicApiOrigin();
   return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
 }

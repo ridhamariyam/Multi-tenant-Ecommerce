@@ -1,16 +1,18 @@
 import type { MetadataRoute } from 'next';
 
-import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo';
+import { siteDescription } from '@/lib/seo';
+import { FALLBACK_BRAND_NAME, getBrand } from '@/lib/storefront/brand';
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const brand = (await getBrand()) ?? { name: FALLBACK_BRAND_NAME, description: null, primaryColor: null };
   return {
-    name: SITE_NAME,
-    short_name: SITE_NAME,
-    description: SITE_DESCRIPTION,
+    name: brand.name,
+    short_name: brand.name,
+    description: siteDescription(brand),
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#ffffff',
+    theme_color: brand.primaryColor ?? '#ffffff',
     icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }],
   };
 }

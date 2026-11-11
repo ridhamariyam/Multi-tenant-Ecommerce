@@ -33,7 +33,15 @@ from app.catalogue.service import CategoryService, ProductService, VariantServic
 from app.catalogue.uploads import store_image
 from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal, dispose_engine
+from app.stores.models import Store
 from app.tenants.models import Tenant
+
+CLIQ_DESCRIPTION = (
+    "Complete looks, styled head to toe. Shop CliQ. streetwear, sneakers and accessories "
+    "with cash on delivery across India."
+)
+# Drawn by the storefront as the CliQ. lockup (see BrandLogo).
+CLIQ_WORDMARK = "/images/cliq-wordmark.svg"
 
 BRAND = "CliQ."
 ASSETS = "https://reel-ref-try-the-look.vercel.app/assets/"
@@ -100,10 +108,18 @@ async def seed_cliq_demo() -> None:
         raise RuntimeError("The CliQ. dummy catalogue is never seeded in production")
 
     async with AsyncSessionLocal() as session:
-        tenants = (await session.scalars(select(Tenant))).all()
-        if len(tenants) != 1:
-            raise RuntimeError(f"Expected exactly one store, found {len(tenants)}")
-        tenant = tenants[0]
+        slug = get_settings().seed_tenant_slug
+        tenant = await session.scalar(select(Tenant).where(Tenant.slug == slug))
+        if tenant is None:
+            raise RuntimeError(f"No brand with slug {slug!r}; run app.commands.bootstrap first")
+
+        # The CliQ. identity the storefront reads from /storefront/resolve.
+        if not tenant.description:
+            tenant.description = CLIQ_DESCRIPTION
+        store = await session.scalar(select(Store).where(Store.tenant_id == tenant.id))
+        if store is not None and not store.logo_url:
+            store.logo_url = CLIQ_WORDMARK
+        await session.commit()
 
         categories = {
             c.name: c

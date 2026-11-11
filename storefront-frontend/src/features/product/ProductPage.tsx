@@ -13,6 +13,8 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { categorySlug } from '@/lib/catalogue/slug';
 import type { ProductStorefront } from '@/types/catalogue';
 
+import { brandName } from '@/lib/storefront/brand';
+
 import { ProductJsonLd } from './productSeo';
 
 import homeStyles from '@/app/(storefront)/(home)/home/_components/luxe/Home.module.css';
@@ -52,7 +54,7 @@ const SingleProductPage = async ({
 
   /* A product with no reviews still renders, with an empty star row, and
      "you might also like" falls back to nothing rather than to filler. */
-  const [summary, related, reviews, user] = await Promise.all([
+  const [summary, related, reviews, user, storeName] = await Promise.all([
     reviewApi.summary(product.id).catch(() => null),
     catalogueApi
       .listProducts({ category_id: product.category.id, page_size: RELATED_COUNT + 1 })
@@ -63,6 +65,7 @@ const SingleProductPage = async ({
       .then(page => page.items)
       .catch(() => []),
     getCurrentUser().catch(() => null),
+    brandName(),
   ]);
 
   const images = [...product.images].sort(
@@ -71,7 +74,7 @@ const SingleProductPage = async ({
 
   return (
     <div className={homeStyles.page}>
-      <ProductJsonLd product={product} summary={summary} />
+      <ProductJsonLd product={product} summary={summary} storeName={storeName} />
       <div className={homeStyles.container}>
         <nav className={styles.crumb} aria-label="Breadcrumb">
           <Link href="/">Home</Link>

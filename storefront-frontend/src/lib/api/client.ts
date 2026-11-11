@@ -1,4 +1,5 @@
 import { apiBaseUrl } from '@/lib/env';
+import { visitedHost } from '@/lib/api/visited-host';
 import { ApiError, ApiUnreachableError } from '@/lib/api/errors';
 import type { ApiEnvelope, ApiErrorEnvelope, Page } from '@/types/api';
 
@@ -69,8 +70,9 @@ function retryAfterFrom(response: Response): number | null {
  * `{success, message, error}`, so unwrapping and error normalisation happen
  * here once instead of at each call site. A 204 yields an empty envelope.
  *
- * The tenant is resolved by the backend from the request's Host header, so
- * there is deliberately no tenant header to attach.
+ * The backend resolves the brand from the host. Server-side calls name the
+ * shopper's domain in X-Forwarded-Host; browser calls go through the
+ * storefront's own /api/v1 proxy. No tenant id is ever sent.
  */
 async function send<T>(path: string, options: RequestOptions): Promise<ApiEnvelope<T>> {
   const {
@@ -96,6 +98,11 @@ async function send<T>(path: string, options: RequestOptions): Promise<ApiEnvelo
 
   if (token) {
     requestHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  if (!requestHeaders['X-Forwarded-Host']) {
+    const host = await visitedHost();
+    if (host) requestHeaders['X-Forwarded-Host'] = host;
   }
 
   const next: { revalidate?: number | false; tags?: string[] } = {};

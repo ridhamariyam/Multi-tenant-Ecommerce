@@ -6,20 +6,25 @@ import { headers } from 'next/headers';
  *
  * Every brand is served from its own domain, so absolute URLs (canonical
  * links, Open Graph, sitemap, structured data) come from the request's host.
- * NEXT_PUBLIC_SITE_URL, when set, wins: use it when one deployment serves a
- * single brand behind a proxy that rewrites the host.
+ * NEXT_PUBLIC_SITE_URL is only the fallback for when there is no request
+ * (build time). Names and descriptions come from the resolved brand.
  */
 
-export const SITE_NAME = 'CliQ.';
-export const SITE_DESCRIPTION =
-  'Complete looks, styled head to toe. Shop CliQ. streetwear, sneakers and accessories with cash on delivery across India.';
+export interface SeoBrand {
+  name: string;
+  description: string | null;
+}
+
+export function siteDescription(brand: SeoBrand): string {
+  return plainText(brand.description, 200) || `Shop ${brand.name} online.`;
+}
 
 export async function siteUrl(): Promise<string> {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\/+$/, '');
-
   const h = await headers();
-  const host = h.get('x-forwarded-host')?.split(',')[0]?.trim() || h.get('host') || 'localhost:3000';
+  const host = h.get('x-forwarded-host')?.split(',')[0]?.trim() || h.get('host');
+  if (!host) {
+    return (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  }
   const forwarded = h.get('x-forwarded-proto')?.split(',')[0]?.trim();
   const local = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host) || host.endsWith('.localhost') || host.endsWith('.test');
   return `${forwarded || (local ? 'http' : 'https')}://${host}`;
@@ -30,12 +35,12 @@ export async function absoluteUrl(path: string): Promise<string> {
   return `${await siteUrl()}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-/** The default share card, served by app/og/route.tsx. */
-export const DEFAULT_OG_IMAGE = { url: '/og', width: 1200, height: 630, alt: SITE_NAME };
+/** The default share card, served by app/og/route.tsx (drawn for the visited brand). */
+export const DEFAULT_OG_IMAGE = { url: '/og', width: 1200, height: 630 };
 
-/** A title without a trailing "| CliQ." -- the layout's template adds the brand once. */
-export function withoutBrand(title: string): string {
-  const brand = SITE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\.$/, '\\.?');
+/** A title without a trailing "| <brand>" -- the layout's template adds the brand once. */
+export function withoutBrand(title: string, name: string): string {
+  const brand = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\.$/, '\\.?');
   return title.replace(new RegExp(`\\s*[|\\-–—]\\s*${brand}\\s*$`, 'i'), '').trim();
 }
 

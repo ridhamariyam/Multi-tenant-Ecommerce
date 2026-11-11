@@ -2478,3 +2478,25 @@
     transform: none !important;
   }
 }
+
+/* A brand's own logo, or its name when it has none (multi-brand stores). */
+.brandLogoImage {
+  display: block;
+  max-height: 44px;
+  max-width: 180px;
+  width: auto;
+  object-fit: contain;
+}
+.brandLogoText {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--cliq-midnight-navy);
+  white-space: nowrap;
+}
+.footerBrandText {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 40px;
+  color: var(--cliq-champagne-gold);
+}

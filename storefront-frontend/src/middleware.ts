@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
      with /account bouncing them to sign-in. */
   if (isTokenExpired(accessToken) && refreshToken) {
     try {
-      const tokens = await authApi.refresh(refreshToken);
+      const tokens = await authApi.refresh(refreshToken, request.headers.get('host'));
       accessToken = tokens.access_token;
       refreshed = { access: tokens.access_token, refresh: tokens.refresh_token };
     } catch {
@@ -110,6 +110,6 @@ export const config = {
      * Everything except Next's own assets and files with an extension, so
      * the refresh runs on navigations rather than on every image request.
      */
-    '/((?!_next/static|_next/image|favicon.ico|assets|.*\\.).*)',
+    '/((?!api/v1|_next/static|_next/image|favicon.ico|assets|.*\\.).*)',
   ],
 };

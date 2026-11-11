@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   /* Trace server files from this app, not a stray lockfile higher up the disk. */
   outputFileTracingRoot: path.join(__dirname),
+  /* Browser API calls go through the storefront's own domain, so the API
+     sees which brand's store they come from (the proxy sets X-Forwarded-Host). */
+  async rewrites() {
+    const api = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+    return api ? [{ source: '/api/v1/:path*', destination: `${api}/:path*` }] : [];
+  },
   async redirects() {
     /* Shop entry points that have no page of their own. */
     return [

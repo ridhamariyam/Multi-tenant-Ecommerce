@@ -1,33 +1,46 @@
 import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
-import { DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, siteUrl } from '@/lib/seo';
+import StoreUnavailable from '@/components/StoreUnavailable';
+import { BrandProvider } from '@/context/BrandContext';
+import { mediaUrl } from '@/lib/media';
+import { DEFAULT_OG_IMAGE, NO_INDEX, siteDescription, siteUrl } from '@/lib/seo';
+import { FALLBACK_BRAND_NAME, getStorefront } from '@/lib/storefront/brand';
 
 /**
- * Site-wide defaults. A page sets just `title: 'About'` and gets
- * "About | CliQ."; Open Graph and Twitter cards inherit the rest.
- * No canonical here: it would be inherited by every page and point them
- * all at the home page. Pages that should have one set their own.
+ * Site-wide defaults for whichever brand this domain serves. A page sets
+ * just `title: 'About'` and gets "About | <brand>"; Open Graph and Twitter
+ * cards inherit the rest. No canonical here: it would be inherited by every
+ * page and point them all at the home page. Pages that need one set it.
  */
 export async function generateMetadata(): Promise<Metadata> {
+  const state = await getStorefront();
+  if (state.status === 'unknown') return { title: 'Store not available', robots: NO_INDEX };
+
+  const brand = state.status === 'ok' ? state.brand : { name: FALLBACK_BRAND_NAME, description: null, faviconUrl: null };
+  const name = brand.name;
+  const description = siteDescription(brand);
+  const favicon = mediaUrl(brand.faviconUrl);
+
   return {
     metadataBase: new URL(await siteUrl()),
-    title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
-    description: SITE_DESCRIPTION,
-    applicationName: SITE_NAME,
+    title: { default: name, template: `%s | ${name}` },
+    description,
+    applicationName: name,
     openGraph: {
       type: 'website',
-      siteName: SITE_NAME,
+      siteName: name,
       locale: 'en_IN',
-      title: SITE_NAME,
-      description: SITE_DESCRIPTION,
-      images: [DEFAULT_OG_IMAGE],
+      title: name,
+      description,
+      images: [{ ...DEFAULT_OG_IMAGE, alt: name }],
     },
-    twitter: { card: 'summary_large_image', title: SITE_NAME, description: SITE_DESCRIPTION, images: [DEFAULT_OG_IMAGE.url] },
+    twitter: { card: 'summary_large_image', title: name, description, images: [DEFAULT_OG_IMAGE.url] },
     robots: { index: true, follow: true, 'max-image-preview': 'large' },
     formatDetection: { telephone: false },
+    ...(favicon ? { icons: { icon: favicon } } : {}),
   };
 }
 
@@ -41,8 +54,19 @@ export const viewport: Viewport = {
  * The only layout that renders the document itself. Nested layouts and the
  * root not-found page render inside <body>; a second <html> there breaks
  * hydration on every page.
+ *
+ * A domain no published store answers at gets the "not available" page
+ * instead of any storefront content. A brand's colours replace the default
+ * palette for everything under <body>.
  */
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const state = await getStorefront();
+  const brand = state.status === 'ok' ? state.brand : null;
+  const palette = {
+    ...(brand?.primaryColor ? { '--cliq-midnight-navy': brand.primaryColor } : {}),
+    ...(brand?.secondaryColor ? { '--cliq-champagne-gold': brand.secondaryColor } : {}),
+  } as CSSProperties;
+
   return (
     <html lang="en-IN">
       <head>
@@ -51,7 +75,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body style={palette}>
+        {state.status === 'unknown' ? (
+          <StoreUnavailable />
+        ) : (
+          <BrandProvider brand={brand}>{children}</BrandProvider>
+        )}
+      </body>
     </html>
   );
 }

@@ -14,6 +14,8 @@ import {
 import HeaderSearch from '@/components/luxe/HeaderSearch';
 import LuxeAccountNav from '@/components/luxe/LuxeAccountNav';
 import LuxeWishlistButton from '@/components/luxe/LuxeWishlistButton';
+import BrandLogo from '@/components/BrandLogo';
+import { useBrand } from '@/context/BrandContext';
 import { useCart } from '@/context/CartContext';
 
 const NAV_LINKS = [
@@ -47,6 +49,7 @@ function CartButton({ className }: { className: string }) {
  * Same links, account, wishlist and cart as every other page.
  */
 function HomeHeader() {
+  const brand = useBrand();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -76,9 +79,17 @@ function HomeHeader() {
           {mobileNavOpen ? <CloseIcon size={21} /> : <MenuIcon size={21} />}
         </button>
 
-        <Link href="/" className={`${styles.homeLogo} ${styles.homeHeaderFade}`} aria-label="CliQ. home" data-home-logo>
-          <span className={styles.homeLogoSymbol} aria-hidden="true" />
-          <span className={styles.homeLogoMark} data-home-logo-wordmark aria-hidden="true" />
+        <Link href="/" className={`${styles.homeLogo} ${styles.homeHeaderFade}`} aria-label={`${brand.name} home`} data-home-logo>
+          <BrandLogo
+            cliqMark={
+              <>
+                <span className={styles.homeLogoSymbol} aria-hidden="true" />
+                <span className={styles.homeLogoMark} data-home-logo-wordmark aria-hidden="true" />
+              </>
+            }
+            className={styles.brandLogoImage}
+            textClassName={styles.brandLogoText}
+          />
         </Link>
 
         <div className={`${styles.homeHeaderRight} ${styles.homeHeaderFade}`}>
