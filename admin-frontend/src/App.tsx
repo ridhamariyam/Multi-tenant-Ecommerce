@@ -1,10 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
 import { AuthProvider } from "./auth/AuthContext";
-import { RequireAuth, RequirePermission } from "./auth/Guards";
+import { RequireAuth, RequireBrand, RequirePermission } from "./auth/Guards";
 import { P } from "./auth/permissions";
 import AdminLayout from "./layouts/AdminLayout";
 import Login from "./screens/Login";
+import Register from "./screens/Register";
+import Brands from "./screens/Brands";
+import StoreSection from "./features/store/StoreSection";
+import TeamSection from "./features/store/TeamSection";
 import { Profile, Settings } from "./screens/Account";
 import DashboardOverview from "./features/overview/DashboardOverview";
 import OrderSection from "./features/orders/OrderSection";
@@ -39,6 +43,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/signin" element={<Login />} />
       <Route path="/login" element={<Navigate to="/signin" replace />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/brands" element={<Brands />} />
       <Route
         element={
           <RequireAuth>
@@ -79,6 +85,9 @@ export function AppRoutes() {
         <Route path="users" element={guard(null, <UserSection />)} />
         <Route path="roles" element={guard(null, <UserSection />)} />
         <Route path="activity" element={guard(P.audit, <AuditLogSection />)} />
+        <Route path="store" element={<RequireBrand><StoreSection /></RequireBrand>} />
+        <Route path="domains" element={<Navigate to="/store" replace />} />
+        <Route path="team" element={<RequireBrand><TeamSection /></RequireBrand>} />
         <Route path="audit-logs" element={guard(P.audit, <AuditLogSection />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

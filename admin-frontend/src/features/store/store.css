@@ -1,0 +1,22 @@
+.store-page .store-panel { padding: 18px 20px; border-radius: 18px; margin-bottom: 14px; }
+.store-page .store-panel h3 { margin: 0 0 6px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.store-publish { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.store-publish p { margin: 4px 0 0; }
+.store-colour { display: flex; gap: 8px; align-items: center; }
+.store-colour input[type="color"] { width: 44px; height: 38px; padding: 2px; flex: none; }
+.store-colour input:not([type="color"]) { flex: 1; min-width: 0; }
+.store-logo-preview { border: 2px solid var(--line, #e4e4e4); border-radius: 12px; padding: 14px; width: fit-content; max-width: 100%; }
+.store-logo-preview img { display: block; max-height: 56px; max-width: 100%; }
+.store-domain-add, .store-team-add { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
+.store-domain-add .field, .store-team-add .field { flex: 1 1 220px; }
+.store-domains, .store-members { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.store-domain, .store-member { border: 1px solid var(--line, #e4e4e4); border-radius: 14px; padding: 12px 14px; }
+.store-domain-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.store-domain-head strong { overflow-wrap: anywhere; }
+.store-domain-remove { margin-left: auto; }
+.store-dns { margin: 10px 0 0; padding-left: 20px; line-height: 1.6; font-size: 13px; }
+.store-dns code { overflow-wrap: anywhere; }
+.store-dns-value { user-select: all; }
+.store-member { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.store-member-who { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; }
+.store-member-who span { overflow-wrap: anywhere; }

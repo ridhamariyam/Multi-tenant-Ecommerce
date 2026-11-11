@@ -3,7 +3,17 @@
 // token refresh, JSON handling and error messages work the same everywhere.
 
 import type { ApiErrorDetail, ApiResponse } from "../types/api";
-import { clearToken, getRefreshToken, getToken, saveTokens } from "../utils/storage";
+import {
+  clearAllSessions,
+  clearToken,
+  getBrandId,
+  getPlatformRefreshToken,
+  getPlatformToken,
+  getRefreshToken,
+  getToken,
+  savePlatformTokens,
+  saveTokens,
+} from "../utils/storage";
 
 // The backend resolves the store (tenant) from this host, so it must be the
 // CliQ API's own domain in production. Configure with NEXT_PUBLIC_API_ORIGIN.
@@ -37,6 +47,9 @@ export interface RequestOptions {
   body?: unknown; // sent as JSON
   formData?: FormData; // sent as multipart/form-data (file uploads)
   auth?: boolean; // false for the login calls themselves
+  // "platform": the merchant's platform session (brand list, members, creating
+  // brands). Default "brand": the open store's token, for everything else.
+  session?: "brand" | "platform";
 }
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -87,8 +100,62 @@ function errorFromBody(status: number, body: unknown): ApiError {
 
 let refreshing: { token: string; promise: Promise<boolean> } | null = null;
 
+let platformRefreshing: Promise<boolean> | null = null;
+
+/** Rotate the platform session's refresh token; false when it can no longer be renewed. */
+export async function refreshPlatformSession(): Promise<boolean> {
+  const refreshToken = getPlatformRefreshToken();
+  if (!refreshToken) return false;
+  platformRefreshing ??= (async () => {
+    try {
+      const response = await fetch(apiUrl("/platform/auth/refresh"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!response.ok) return false;
+      const data = ((await parse(response)) as { data?: { access_token?: string; refresh_token?: string } } | null)?.data;
+      if (!data?.access_token || !data.refresh_token) return false;
+      if (getPlatformRefreshToken() !== refreshToken) return !!getPlatformToken();
+      savePlatformTokens(data.access_token, data.refresh_token);
+      return true;
+    } catch {
+      throw new ApiError("Unable to renew your session. Check your connection and try again.", 0);
+    } finally {
+      platformRefreshing = null;
+    }
+  })();
+  return platformRefreshing;
+}
+
+/** A fresh token for the open brand, requested with the platform session (brand tokens have no refresh token). */
+async function renewBrandToken(brandId: string): Promise<boolean> {
+  const ask = () =>
+    fetch(apiUrl(`/brands/${encodeURIComponent(brandId)}/switch`), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getPlatformToken() ?? ""}` },
+    });
+  let response: Response;
+  try {
+    response = await ask();
+    if (response.status === 401 && (await refreshPlatformSession())) response = await ask();
+  } catch {
+    throw new ApiError("Unable to renew your session. Check your connection and try again.", 0);
+  }
+  if (!response.ok) return false;
+  const token = ((await parse(response)) as { data?: { access_token?: string } } | null)?.data?.access_token;
+  if (!token || getBrandId() !== brandId) return false;
+  saveTokens(token, null);
+  return true;
+}
+
 /** Rotate once per session, including requests from other tabs when Web Locks are available. */
 async function refreshSession(accessToken: string | null): Promise<boolean> {
+  const brandId = getBrandId();
+  if (brandId) {
+    if (getToken() !== accessToken && getToken()) return true; // already renewed by another request
+    return renewBrandToken(brandId);
+  }
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
   if (refreshing?.token === refreshToken) return refreshing.promise;
@@ -129,9 +196,10 @@ async function refreshSession(accessToken: string | null): Promise<boolean> {
 }
 
 async function send(path: string, options: RequestOptions, retry: boolean): Promise<Response> {
-  const { method = "GET", query, body, formData, auth = true } = options;
+  const { method = "GET", query, body, formData, auth = true, session = "brand" } = options;
   const headers: Record<string, string> = {};
-  const accessToken = auth ? getToken() : null;
+  const platform = session === "platform";
+  const accessToken = auth ? (platform ? getPlatformToken() : getToken()) : null;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   let requestBody: BodyInit | undefined;
   if (formData) {
@@ -153,6 +221,15 @@ async function send(path: string, options: RequestOptions, retry: boolean): Prom
       "Could not reach the backend. Check your connection and try again.",
       0
     );
+  }
+
+  if (response.status === 401 && auth && platform) {
+    if (retry && (await refreshPlatformSession())) return send(path, options, false);
+    if (getPlatformToken() === accessToken) {
+      clearAllSessions();
+      unauthorizedHandler?.();
+    }
+    return response;
   }
 
   if (response.status === 401 && auth) {

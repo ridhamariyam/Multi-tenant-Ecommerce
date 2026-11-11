@@ -53,6 +53,7 @@ describe("admin panel access", () => {
       route("GET", "/auth/me", () => ok(profile({ role: "CUSTOMER" })))
     );
     renderAt("/");
+    await userEvent.click(await screen.findByRole("tab", { name: "Store admin" }));
     await userEvent.type(await screen.findByLabelText("Email or phone"), "x@y.com");
     await userEvent.type(screen.getByLabelText("Password"), "secret-pass");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));

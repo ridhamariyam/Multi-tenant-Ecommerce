@@ -15,7 +15,12 @@ describe("Admin redesign", () => {
     renderApp("/orders");
     const nav = await screen.findByRole("navigation", { name: "Admin sections" });
     for (const item of NAV_GROUPS.flatMap((group) => group.items)) {
-      expect(within(nav).getByRole("link", { name: item.label })).toHaveAttribute("href", item.path);
+      if (item.brandOnly) {
+        // Store settings belong to merchant mode; a per-store login does not see them.
+        expect(within(nav).queryByRole("link", { name: item.label })).not.toBeInTheDocument();
+      } else {
+        expect(within(nav).getByRole("link", { name: item.label })).toHaveAttribute("href", item.path);
+      }
     }
     const toggle = screen.getByRole("button", { name: "Toggle menu" });
     await userEvent.click(toggle);

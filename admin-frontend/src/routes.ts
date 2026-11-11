@@ -5,6 +5,8 @@ export interface NavItem {
   label: string;
   permission?: string;
   adminOnly?: boolean;
+  /** Only with a merchant account and a brand open. */
+  brandOnly?: boolean;
 }
 
 // Sidebar structure. Each screen's route in App.tsx uses the same permission.
@@ -38,6 +40,13 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "Content",
     items: [{ path: "/cms", label: "Website content", permission: P.cmsView }],
+  },
+  {
+    title: "Store",
+    items: [
+      { path: "/store", label: "Store & branding", adminOnly: true, brandOnly: true },
+      { path: "/team", label: "Team", adminOnly: true, brandOnly: true },
+    ],
   },
   {
     title: "Settings",

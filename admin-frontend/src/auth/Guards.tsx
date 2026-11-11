@@ -3,9 +3,11 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, checking } = useAuth();
+  const { user, merchant, checking } = useAuth();
   const location = useLocation();
   if (checking) return <div className="state">Checking your session…</div>;
+  // A merchant signed in without a brand open picks one first.
+  if (!user && merchant) return <Navigate to="/brands" replace />;
   if (!user) return <Navigate to="/signin" replace state={{ from: location.pathname }} />;
   return <>{children}</>;
 }
@@ -33,3 +35,25 @@ export function RequirePermission({
   return <>{children}</>;
 }
 
+
+/** Screens that exist only for a merchant account with a brand open (store, domains, team). */
+export function RequireBrand({ children }: { children: ReactNode }) {
+  const { brandId, isAdmin } = useAuth();
+  if (!brandId) {
+    return (
+      <div className="state">
+        <h2>Not available here</h2>
+        <p>Store settings are managed by signing in with a merchant account.</p>
+      </div>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <div className="state">
+        <h2>No access</h2>
+        <p>Only the brand&apos;s owner or admins can change these settings.</p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}

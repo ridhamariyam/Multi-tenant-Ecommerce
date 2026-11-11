@@ -573,3 +573,9 @@ input, select, textarea { max-width: 100%; }
   .login-brand { padding: 24px 12px; border-radius: 22px; }
   .login-card { padding: 24px 20px; }
 }
+
+/* Merchant mode: the open brand, above the navigation. */
+.brand-switcher { display: flex; flex-direction: column; gap: 2px; margin: 4px 12px 12px; padding: 10px 12px; border-radius: 14px; background: var(--surface-strong); }
+.brand-switcher-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-soft); }
+.brand-switcher-name { overflow-wrap: anywhere; }
+.brand-switcher-button { align-self: flex-start; margin-top: 6px; padding: 4px 10px; font-size: 12px; }

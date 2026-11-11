@@ -18,6 +18,8 @@ const paths: Record<string, string> = {
   "/integrations": "M8 2v5 M16 2v5 M5 7h14v3a7 7 0 0 1-14 0V7z M12 17v5",
   "/staff": "m12 2 8 3v6c0 5-8 11-8 11S4 16 4 11V5l8-3z m-4 10 3 3 5-6",
   "/activity": "M3 12h4l3-8 4 16 3-8h4",
+  "/store": "M3 9l2-5h14l2 5 M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0V9z M5 13v8h14v-8 M10 21v-5h4v5",
+  "/team": "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2 M17 7h5 M19.5 4.5v5",
 };
 
 export default function NavIcon({ path }: { path: string }) {

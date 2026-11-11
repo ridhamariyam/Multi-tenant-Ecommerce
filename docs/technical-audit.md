@@ -85,9 +85,9 @@ folder.
 
 | Module | Status |
 |---|---|
-| Merchant accounts, login, refresh rotation | IMPLEMENTED (API, 49 tests) — **no UI** |
-| Brand registration, switching, members, roles | IMPLEMENTED (API) — **no UI** |
-| Store settings, publish, custom domains (TXT generated, admin-verified) | IMPLEMENTED (API) — **no UI**; TXT not checked automatically |
+| Merchant accounts, login, refresh rotation | COMPLETE AND TESTED (API + admin UI) |
+| Brand registration, switching, members, roles | COMPLETE AND TESTED (API + admin UI) |
+| Store settings, publish, custom domains (TXT generated, admin-verified) | COMPLETE AND TESTED (API + admin UI); TXT not checked automatically, logo/favicon are URLs (no upload yet) |
 | Platform admin (brands list, suspend, verify domain) | IMPLEMENTED (API) — **no UI** |
 | Password recovery, email verification for merchants | NOT IMPLEMENTED |
 | Onboarding checklist, demo data | NOT IMPLEMENTED |
@@ -182,7 +182,7 @@ checks, builds and an update to this table.
 |---|---|---|
 | 1 | Storefront tenant resolution: host forwarding, same-origin API proxy, brand from `/storefront/resolve` (name, logo, colours, favicon, SEO), unknown/unpublished store pages | **Done** (2026-11-11) — see §7 |
 | 2 | Storefront dependency vulnerabilities (R2) | **Done** (2026-11-11) — see §7 |
-| 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | Planned |
+| 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | **Done** (2026-11-11) — see §7 |
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | Planned |
 | 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | Planned |
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | Planned |
@@ -250,3 +250,33 @@ visited domain, and there is no billing.
   via `overrides` in package.json.
 - `npm audit`: 0 vulnerabilities (was 7: 1 critical, 1 high). Type check, production
   build and all 13 public pages pass; product page checked in the browser.
+
+### 2026-11-11 — Step 3: merchant console (admin app)
+
+- **Merchant mode** in `admin-frontend`: the sign-in page defaults to *Merchant*
+  (email + password, `/platform/auth/*`); the old per-store Admin/Staff logins remain as
+  tabs. `/register` creates a merchant account.
+- `/brands`: the merchant's brands (role, live/unpublished, store address, suspended);
+  *Manage* opens one; *Create brand* (name + suggested store address) creates brand +
+  store and opens it with the returned token. First-run shows the create form directly.
+- Opening a brand stores its short-lived brand token as the admin access token, so every
+  existing admin screen works unchanged. Brand tokens have no refresh token: on a 401 the
+  client asks `/brands/{id}/switch` with the platform session (rotating that session with
+  `/platform/auth/refresh` if needed) and retries. Platform calls use the platform token
+  (`request(..., { session: "platform" })`).
+- New screens (owner/admin, merchant mode only): **Store & branding** (publish/unpublish
+  with confirmation, name, address, theme, colours, logo/favicon URLs with preview,
+  custom domains with CNAME/TXT instructions, remove with confirmation) and **Team**
+  (add by merchant email with role, change role, remove). Sidebar shows the open brand
+  and *Switch brand*.
+- Tests: `src/screens/merchant.test.tsx` (6 journeys: sign-in → open brand, first brand,
+  token renewal, publish + domain, team, per-store login cannot reach store settings).
+  Existing suite flakiness traced to 5 s/1 s timeouts under load (failing set changed
+  between runs; all pass with time); raised `testTimeout` and Testing Library
+  `asyncUtilTimeout`. Admin: 214/214 tests twice in a row, lint clean, build passes.
+- Verified against the live API through the admin proxy: sign-in, brand list, open,
+  `/auth/me` as ADMIN, save colours, domains, team; the Northwind storefront rendered the
+  new colours within a minute. (Browser extension disconnected mid-check; the UI paths
+  are covered by the Vitest journeys.)
+- Not yet: logo/favicon **upload** (URLs only), password reset (needs an email
+  provider), email invitations for teammates without an account, onboarding checklist.
