@@ -121,6 +121,23 @@ services:
       - -c
       - while true; do python -m app.commands.sync_shipments || echo "shipment sync run failed" >&2; sleep 900; done
 
+  # Google Sheets: append each store's new sales to its connected spreadsheet.
+  # Idle until GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON is set and a store connects one.
+  order-sheets:
+    build:
+      context: ./backend
+    container_name: tws_ec2_order_sheets
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tws}:${POSTGRES_PASSWORD:-tws_dev_password}@postgres:5432/${POSTGRES_DB:-tws_ecommerce}
+      REDIS_URL: redis://redis:6379/0
+    command: ["python", "-m", "app.commands.sync_order_sheets", "--loop", "60"]
+
 volumes:
   postgres_data:
     name: tws_ec2_postgres_data

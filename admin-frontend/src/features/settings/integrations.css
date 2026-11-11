@@ -11,3 +11,11 @@
 .integrations-page .integrations-technical p { margin: 5px 0 0; }
 .integrations-page .integrations-technical code { overflow-wrap: anywhere; }
 @media (max-width: 700px) { .integrations-page td:first-child { white-space: normal; } }
+.integrations-page .order-sheet-panel { padding: 16px 18px; border-radius: 18px; margin-bottom: 10px; }
+.integrations-page .order-sheet-panel h3 { margin: 0 0 4px; }
+.integrations-page .order-sheet-steps { margin: 8px 0 12px; padding-left: 20px; line-height: 1.6; }
+.integrations-page .order-sheet-email { overflow-wrap: anywhere; user-select: all; }
+.integrations-page .order-sheet-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.integrations-page .order-sheet-stats { display: flex; gap: 28px; flex-wrap: wrap; margin: 12px 0 6px; }
+.integrations-page .order-sheet-stats dt { font-size: 12px; color: var(--muted); }
+.integrations-page .order-sheet-stats dd { margin: 2px 0 0; font-weight: 600; }

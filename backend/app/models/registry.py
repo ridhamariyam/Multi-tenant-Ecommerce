@@ -30,6 +30,7 @@ from app.cod.models import CodBlacklistEntry, CodSettings
 from app.coupons.models import Coupon, CouponCategory, CouponUsage
 from app.customers.models import CustomerNote
 from app.models.base import Base
+from app.integrations.models import OrderSheetExport, OrderSheetSettings
 from app.looks.models import Look, LookItem
 from app.media.models import MediaAsset
 from app.merchants.models import MerchantAccount, MerchantRefreshToken
@@ -95,6 +96,8 @@ __all__ = [
     "InventoryMovement",
     "Order",
     "OrderItem",
+    "OrderSheetExport",
+    "OrderSheetSettings",
     "OrderTrackingEvent",
     "OtpRequest",
     "Payment",

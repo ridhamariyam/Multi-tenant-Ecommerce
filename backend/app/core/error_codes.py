@@ -213,6 +213,14 @@ class BillingErrorCode(ErrorCode):
     FEATURE_NOT_IN_PLAN = "FEATURE_NOT_IN_PLAN"
 
 
+class IntegrationErrorCode(ErrorCode):
+    SHEETS_NOT_CONFIGURED = "SHEETS_NOT_CONFIGURED"
+    SHEETS_INVALID_SPREADSHEET = "SHEETS_INVALID_SPREADSHEET"
+    SHEETS_ACCESS_DENIED = "SHEETS_ACCESS_DENIED"
+    SHEETS_NOT_FOUND = "SHEETS_NOT_FOUND"
+    SHEETS_UNAVAILABLE = "SHEETS_UNAVAILABLE"
+
+
 ERROR_CODE_DOMAINS: tuple[type[ErrorCode], ...] = (
     CommonErrorCode,
     TenantErrorCode,
@@ -235,4 +243,6 @@ ERROR_CODE_DOMAINS: tuple[type[ErrorCode], ...] = (
     AiErrorCode,
     LookErrorCode,
     BillingErrorCode,
+    IntegrationErrorCode,
 )
+

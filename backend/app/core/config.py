@@ -85,6 +85,15 @@ class Settings(BaseSettings):
 
     google_client_id: str | None = None
 
+    # Google Sheets order export. One platform service account; each brand
+    # shares its own spreadsheet with that account's email. The JSON key may
+    # be given inline (raw or base64) or as a path to the key file.
+    google_sheets_service_account_json: str | None = Field(default=None, repr=False)
+    google_sheets_service_account_file: str | None = None
+    google_sheets_api_url: str = "https://sheets.googleapis.com/v4"
+    google_sheets_timeout_seconds: float = Field(default=15.0, gt=0, le=120)
+    order_sheet_batch_size: int = Field(default=200, ge=1, le=1000)
+
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     docs_enabled: bool | None = None

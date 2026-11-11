@@ -1,8 +1,11 @@
 import { listIntegrations } from "../../api/integrations";
+import { useAuth } from "../../auth/AuthContext";
+import { P } from "../../auth/permissions";
 import DataTable from "../../components/common/DataTable";
 import PageHeader from "../../components/common/PageHeader";
 import { useApi } from "../../hooks/useApi";
 import type { Integration } from "../../types/settings";
+import OrderSheetPanel from "./OrderSheetPanel";
 import "./integrations.css";
 
 const SETUP_STEPS: Record<string, string> = {
@@ -11,6 +14,7 @@ const SETUP_STEPS: Record<string, string> = {
   msg91_customer_otp: "OTP verification is implemented. Ask the project lead to configure the provider account.",
   msg91_admin_otp: "Admin OTP template and sign-in integration are required. Ask the project lead to complete setup.",
   email: "Email provider configuration and sending integration are required. Ask the project lead to complete setup.",
+  google_sheets: "Add the Google service account key on the server, then connect a sheet above.",
   whatsapp: "WhatsApp provider configuration and messaging integration are required. Ask the project lead to complete setup.",
 };
 const IMPLEMENTATION_STEPS: Record<string, string> = {
@@ -37,10 +41,12 @@ function nextStep(integration: Integration) {
 // Read-only: credentials live in the backend's environment, never in this app.
 function IntegrationsSection() {
   const list = useApi(() => listIntegrations(), []);
+  const { can } = useAuth();
   return (
     <div className="integrations-page">
       <PageHeader title="Integrations" subtitle="External services and their setup progress" />
       <p className="muted integrations-intro">The project lead configures these services on the server. Status shows setup progress, not a verified live connection.</p>
+      <OrderSheetPanel canEdit={can(P.settingsManage)} />
       <div className="panel integrations-table-panel">
         <DataTable
           rows={list.data}

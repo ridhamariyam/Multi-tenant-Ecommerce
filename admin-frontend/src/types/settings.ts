@@ -157,3 +157,29 @@ export interface GstReport {
   by_rate: { component?: "ITEMS" | "CHARGES_AND_ADJUSTMENTS"; gst_type: "INTRA_STATE" | "INTER_STATE" | null; gst_rate: string | null; hsn_code?: string | null; taxable_amount: string; cgst_amount: string; sgst_amount: string; igst_amount: string }[];
   currency: string;
 }
+
+export interface OrderSheetSettings {
+  credentials_configured: boolean;
+  service_account_email: string | null;
+  is_enabled: boolean;
+  spreadsheet_id: string | null;
+  spreadsheet_url: string | null;
+  worksheet_name: string;
+  last_synced_at: string | null;
+  last_error: string | null;
+  last_error_at: string | null;
+  pending_orders: number;
+  exported_orders: number;
+}
+
+export interface OrderSheetSettingsInput {
+  is_enabled: boolean;
+  spreadsheet: string | null;
+  worksheet_name: string;
+}
+
+export interface OrderSheetSyncResult {
+  exported: number;
+  pending: number;
+  error: string | null;
+}

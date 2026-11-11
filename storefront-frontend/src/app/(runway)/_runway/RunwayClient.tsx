@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '@/context/AuthContext';
+import { useSignInModal } from '@/context/SignInModalContext';
 import { addCartItem } from '@/lib/cart/actions';
 
 interface AddRequest {
@@ -20,6 +22,8 @@ interface AddRequest {
  * made it in, so a partial failure marks only those pieces as added.
  */
 export default function RunwayClient({ initialCount }: { initialCount: number }) {
+  const { isSignedIn } = useAuth();
+  const { openSignIn } = useSignInModal();
   const [count, setCount] = useState(initialCount);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -80,9 +84,13 @@ export default function RunwayClient({ initialCount }: { initialCount: number })
           <a href="/">Home</a>
           <a href="/products">Shop</a>
           <a href="/about">About</a>
-          <a href="/" aria-current="page">
-            Runway
-          </a>
+          {isSignedIn ? (
+            <a href="/account">My Account</a>
+          ) : (
+            <button type="button" className="nav-signin" onClick={() => openSignIn()}>
+              Login
+            </button>
+          )}
         </nav>
         <a href="/cart" className="bag-link" aria-label={`Open bag, ${count} ${count === 1 ? 'item' : 'items'}`}>
           <svg width="22" height="24" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
