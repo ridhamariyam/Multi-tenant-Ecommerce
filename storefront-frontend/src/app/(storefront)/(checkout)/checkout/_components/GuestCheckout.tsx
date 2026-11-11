@@ -13,6 +13,7 @@ import type { CheckoutPreview, Offer, Order } from '@/types/orders';
 
 import styles from './Checkout.module.css';
 import OrderSummaryPanel from './OrderSummaryPanel';
+import { taxLabel } from '@/lib/money';
 
 const PINCODE = /^[1-9][0-9]{5}$/;
 
@@ -376,7 +377,7 @@ function GuestOrderPlaced({ order }: { order: Order }) {
                 </div>
               )}
               <div className={styles.summaryRow}>
-                <span>Tax</span>
+                <span>{taxLabel(order)}</span>
                 <span>{money(order.tax_amount)}</span>
               </div>
               <div className={styles.summaryRow}>

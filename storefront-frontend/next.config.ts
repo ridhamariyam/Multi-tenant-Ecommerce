@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const SECURITY_HEADERS = [
@@ -10,6 +11,8 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  /* Trace server files from this app, not a stray lockfile higher up the disk. */
+  outputFileTracingRoot: path.join(__dirname),
   async redirects() {
     /* Shop entry points that have no page of their own. */
     return [

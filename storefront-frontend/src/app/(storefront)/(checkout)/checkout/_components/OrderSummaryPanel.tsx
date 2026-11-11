@@ -10,6 +10,7 @@ import type { CartItem } from '@/types/cart';
 import type { CheckoutPreview, Offer } from '@/types/orders';
 
 import styles from './Checkout.module.css';
+import { taxLabel } from '@/lib/money';
 
 function offerDescription(offer: Offer): string {
   const minimum = offer.min_order_amount
@@ -267,7 +268,7 @@ export default function OrderSummaryPanel({
           )}
 
           <div className={styles.summaryRow}>
-            <span>Estimated Tax</span>
+            <span>{preview ? taxLabel(preview, 'Estimated Tax') : 'Estimated Tax'}</span>
             <span>{formatMoney(preview?.tax_amount, STOREFRONT_CURRENCY)}</span>
           </div>
         </div>

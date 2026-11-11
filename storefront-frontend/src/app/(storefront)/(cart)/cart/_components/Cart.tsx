@@ -18,6 +18,7 @@ import type { CartItem } from '@/types/cart';
 import type { CheckoutPreview } from '@/types/orders';
 
 import styles from './Cart.module.css';
+import { taxLabel } from '@/lib/money';
 
 // -----------------------------------
 // ROW
@@ -275,7 +276,7 @@ export default function Cart({ preview: serverPreview }: { preview: CheckoutPrev
 
                 {preview && (
                   <div className={styles.summaryRow}>
-                    <span>Tax</span>
+                    <span>{taxLabel(preview)}</span>
                     <span>{formatMoney(preview.tax_amount, STOREFRONT_CURRENCY)}</span>
                   </div>
                 )}

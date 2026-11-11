@@ -10,6 +10,7 @@ import type { Order } from '@/types/orders';
 
 import styles from './OrderSuccess.module.css';
 import PayNowButton from './PayNowButton';
+import { taxLabel } from '@/lib/money';
 
 export type OrderProductImages = Record<string, { url: string; alt_text: string | null } | null | undefined>;
 
@@ -137,7 +138,7 @@ export default function OrderSuccess({ order, productImages }: { order: Order; p
                 {Number(order.discount_amount) > 0 && <div><dt>Discount{order.coupon_code ? ` · ${order.coupon_code}` : ''}</dt><dd>−{formatMoney(order.discount_amount, order.currency)}</dd></div>}
                 <div><dt>Shipping</dt><dd>{Number(order.shipping_amount) === 0 ? 'Free' : formatMoney(order.shipping_amount, order.currency)}</dd></div>
                 {Number(order.cod_fee ?? 0) > 0 && <div><dt>Cash handling</dt><dd>{formatMoney(order.cod_fee, order.currency)}</dd></div>}
-                <div><dt>Tax</dt><dd>{formatMoney(order.tax_amount, order.currency)}</dd></div>
+                <div><dt>{taxLabel(order)}</dt><dd>{formatMoney(order.tax_amount, order.currency)}</dd></div>
                 <div className={styles.grandTotal}><dt>Total</dt><dd>{formatMoney(order.total_amount, order.currency)}</dd></div>
               </dl>
               <div className={styles.paymentInfo}>
