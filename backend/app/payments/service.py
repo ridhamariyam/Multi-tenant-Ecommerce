@@ -23,7 +23,7 @@ from app.orders.constants import PaymentStatus as OrderPaymentStatus
 from app.orders.models import Order
 from app.orders.repository import OrderRepository
 from app.orders.service import OrderService
-from app.payments import razorpay
+from app.payments import gateway, razorpay
 from app.payments.constants import PaymentPurpose, PaymentStatus
 from app.payments.models import Payment
 from app.payments.repository import PaymentRepository
@@ -39,6 +39,18 @@ REFUND_PROCESSED_EVENT = "refund.processed"
 REFUND_FAILED_EVENT = "refund.failed"
 REFUND_PROCESSED = "processed"
 GATEWAY_CAPTURED = "captured"
+
+
+def _in_brand_account(method):
+    """Run a PaymentService method with the brand's own Razorpay account."""
+    import functools
+
+    @functools.wraps(method)
+    async def wrapper(self, *args, **kwargs):
+        async with gateway.scoped(self.session, self.tenant_id):
+            return await method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class PaymentService:
@@ -78,6 +90,7 @@ class PaymentService:
         rows, total = await self.payments.paginate(stmt, params)
         return list(rows), total
 
+    @_in_brand_account
     async def start_online_payment(
         self, order_id: UUID, customer_id: UUID, currency: str
     ) -> Payment:
@@ -128,6 +141,28 @@ class PaymentService:
             await self.session.rollback()
             raise
 
+    async def verify_guest_razorpay_payment(
+        self,
+        *,
+        razorpay_order_id: str,
+        razorpay_payment_id: str,
+        razorpay_signature: str,
+        currency: str,
+    ) -> Payment:
+        """Confirm a guest order's payment; signed-in orders use the customer route."""
+        payment = await self.payments.get_by_razorpay_order_id(razorpay_order_id)
+        order = await self.orders.get(payment.order_id) if payment is not None else None
+        if payment is None or order is None or not order.is_guest:
+            raise NotFoundError(PAYMENT_NOT_FOUND, error_code=PaymentErrorCode.NOT_FOUND)
+        return await self.verify_razorpay_payment(
+            order.customer_id,
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            currency=currency,
+        )
+
+    @_in_brand_account
     async def verify_razorpay_payment(
         self,
         customer_id: UUID,
@@ -138,6 +173,9 @@ class PaymentService:
         currency: str,
     ) -> Payment:
         """Verify signed callback and authoritative gateway payment details."""
+        if not razorpay.is_configured():
+            # No Razorpay account for this brand: it can hold no online payment.
+            raise NotFoundError(PAYMENT_NOT_FOUND, error_code=PaymentErrorCode.NOT_FOUND)
         if not razorpay.signature_is_valid(
             razorpay_order_id, razorpay_payment_id, razorpay_signature
         ):
@@ -263,6 +301,7 @@ class PaymentService:
 
         return await self.get(payment_id)
 
+    @_in_brand_account
     async def refund(self, order_id: UUID) -> Order:
         """Refund a cancelled order's captured Razorpay payment in full, once."""
         try:
@@ -433,13 +472,30 @@ def _entity(event: Any, kind: str) -> dict[str, Any]:
 
 
 async def handle_razorpay_webhook(
-    session: AsyncSession, raw_body: bytes, signature: str | None
+    session: AsyncSession,
+    raw_body: bytes,
+    signature: str | None,
+    tenant_id: UUID | None = None,
 ) -> str:
-    """Apply one signed Razorpay account webhook to whichever tenant owns its payment."""
-    if not get_settings().razorpay_webhook_secret:
+    """Apply one signed Razorpay account webhook.
+
+    With ``tenant_id`` the webhook came from that brand's own Razorpay account
+    and is checked with the brand's webhook secret. Without it, it came from
+    the platform's account and may only touch brands that use the platform keys.
+    """
+    if tenant_id is not None:
+        scope = await gateway.resolve(session, tenant_id)
+    else:
+        scope = razorpay.Scope(
+            credentials=razorpay.env_credentials(),
+            webhook_secret=get_settings().razorpay_webhook_secret,
+        )
+    if not scope.webhook_secret:
         raise ServiceUnavailableError(WEBHOOK_UNAVAILABLE)
 
-    if not signature or not razorpay.webhook_signature_valid(raw_body, signature):
+    with razorpay.use_scope(scope):
+        valid = bool(signature) and razorpay.webhook_signature_valid(raw_body, signature or "")
+    if not valid:
         raise AuthenticationError(
             "Invalid webhook signature",
             error_code=PaymentErrorCode.INVALID_SIGNATURE,
@@ -468,10 +524,13 @@ async def handle_razorpay_webhook(
         await session.execute(
             select(Tenant.id, Tenant.currency)
             .join(Payment, Payment.tenant_id == Tenant.id)
-            .where(owner)
+            .where(owner, *([Payment.tenant_id == tenant_id] if tenant_id is not None else []))
         )
     ).first()
     if tenant is None:
+        return "ignored"
+    if tenant_id is None and not await gateway.uses_platform_keys(session, tenant.id):
+        # The platform's account cannot speak for a brand with its own account.
         return "ignored"
 
     service = PaymentService(session, tenant.id)

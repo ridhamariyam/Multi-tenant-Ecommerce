@@ -355,3 +355,13 @@ a public server with real DNS or Let's Encrypt.
 - Tests: `tests/core/test_observability.py` (10), system-health API test, console test. Verified live: API with `LOG_FORMAT=json` against the dev database writes JSON request lines with the caller's request id.
 - Not verified: Sentry delivery (no DSN) and a real webhook (none given) — both covered by unit tests with fakes only.
 
+
+### Payments — each brand's own Razorpay, guests pay online (2026-11-11)
+
+- Decision (user): each brand connects its own Razorpay account; the platform's `.env` keys serve only `RAZORPAY_PLATFORM_TENANT_SLUGS` (default: the seeded operator store). Avoids the platform acting as a payment aggregator.
+- `payment_gateway_accounts` (migration `b8e2f0c4d6a1`): key id, key secret + webhook secret encrypted with `SECRETS_ENCRYPTION_KEY` (Fernet; required in production). Keys are checked against Razorpay before saving and never returned.
+- Razorpay adapter is scoped per brand (`gateway.scoped()` / ContextVar); per-brand webhook `POST /payments/razorpay/webhook/{tenant_id}`; the platform webhook can no longer touch a brand that has its own account.
+- Console: Integrations → "Online payments — Razorpay" panel (connect / update / disconnect, webhook URL and setup steps).
+- Storefront: `/storefront/resolve` returns `payments.online` + public `razorpay_key_id`; online methods are disabled with "Not offered by this store yet" when off; Checkout uses the brand's key and name.
+- Decision (user): guests may pay online. Guest checkout offers UPI/cards/net banking; `POST /payments/razorpay/verify-guest` (signature-proven, guest orders only, rate limited).
+- Verified live (dev, Razorpay test mode): guest order ORD-100010 paid by test net banking → PAID in DB; Northwind (no account) resolves `online: false`. Tests: 40 backend (new `tests/payments/test_brand_gateway.py`), 5 console.

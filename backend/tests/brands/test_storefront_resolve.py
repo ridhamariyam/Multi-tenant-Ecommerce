@@ -70,3 +70,12 @@ async def test_another_brands_token_cannot_preview(platform, brand_a, brand_b):
 
     assert response.status_code == 200
     assert response.json()["data"]["brand"]["name"] == "Brand Beta"
+
+
+async def test_resolve_says_whether_the_brand_takes_online_payment(platform, brand_a):
+    await _publish(platform, brand_a)
+
+    data = (await platform.get(RESOLVE, headers=at(f"{brand_a.subdomain}.localhost"))).json()["data"]
+
+    # A new brand has not connected its own Razorpay account yet.
+    assert data["payments"] == {"online": False, "razorpay_key_id": None}

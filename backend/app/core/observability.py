@@ -48,11 +48,25 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(entry, default=str)
 
 
+class TextFormatter(logging.Formatter):
+    """Readable lines for development, still showing the extra fields."""
+
+    def __init__(self) -> None:
+        super().__init__("%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+    def format(self, record: logging.LogRecord) -> str:
+        line = super().format(record)
+        extra = [
+            f"{key}={value}"
+            for key, value in vars(record).items()
+            if key not in _STANDARD_ATTRS and not key.startswith("_") and key != "color_message"
+        ]
+        return f"{line} {' '.join(extra)}" if extra else line
+
+
 def configure_logging(*, json_logs: bool, level: str = "INFO") -> None:
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        JsonFormatter() if json_logs else logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-    )
+    handler.setFormatter(JsonFormatter() if json_logs else TextFormatter())
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())

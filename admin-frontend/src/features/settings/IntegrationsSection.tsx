@@ -6,6 +6,7 @@ import PageHeader from "../../components/common/PageHeader";
 import { useApi } from "../../hooks/useApi";
 import type { Integration } from "../../types/settings";
 import OrderSheetPanel from "./OrderSheetPanel";
+import PaymentGatewayPanel from "./PaymentGatewayPanel";
 import "./integrations.css";
 
 const SETUP_STEPS: Record<string, string> = {
@@ -46,6 +47,7 @@ function IntegrationsSection() {
     <div className="integrations-page">
       <PageHeader title="Integrations" subtitle="External services and their setup progress" />
       <p className="muted integrations-intro">The project lead configures these services on the server. Status shows setup progress, not a verified live connection.</p>
+      <PaymentGatewayPanel canEdit={can(P.settingsManage)} />
       <OrderSheetPanel canEdit={can(P.settingsManage)} />
       <div className="panel integrations-table-panel">
         <DataTable

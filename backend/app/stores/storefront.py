@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.responses import ApiResponse, ok
+from app.payments import gateway
 from app.stores.service import StoreService, store_url
 from app.tenants.resolver import CurrentTenant
 
@@ -38,9 +39,15 @@ class StorefrontStoreRead(BaseModel):
     secondary_color: str | None
 
 
+class StorefrontPaymentsRead(BaseModel):
+    online: bool  # the brand has a working Razorpay account connected
+    razorpay_key_id: str | None  # public by design: Razorpay Checkout needs it
+
+
 class StorefrontResolveRead(BaseModel):
     brand: StorefrontBrandRead
     store: StorefrontStoreRead
+    payments: StorefrontPaymentsRead
     preview: bool  # True when the store is unpublished and a staff member is viewing it
 
 
@@ -58,6 +65,7 @@ async def resolve_storefront(
         "private, no-store" if not store.published else "public, max-age=60"
     )
     response.headers["Vary"] = "Host, Authorization"
+    key_id = await gateway.public_key_id(session, tenant.id)
     return ok(
         StorefrontResolveRead(
             brand=StorefrontBrandRead(
@@ -77,6 +85,7 @@ async def resolve_storefront(
                 primary_color=store.primary_color,
                 secondary_color=store.secondary_color,
             ),
+            payments=StorefrontPaymentsRead(online=key_id is not None, razorpay_key_id=key_id),
             preview=not store.published,
         ),
         message="Storefront",

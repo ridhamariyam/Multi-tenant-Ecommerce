@@ -95,7 +95,12 @@ export interface GuestContactInput {
 export const guestCheckoutApi = {
   preview(
     cartToken: string,
-    input: { address?: GuestAddressInput | null; pincode?: string | null; couponCode?: string | null },
+    input: {
+      address?: GuestAddressInput | null;
+      pincode?: string | null;
+      couponCode?: string | null;
+      paymentMethod?: PaymentMethod;
+    },
   ): Promise<CheckoutPreview> {
     return apiRequest<CheckoutPreview>('/checkout/guest/preview', {
       method: 'POST',
@@ -103,7 +108,7 @@ export const guestCheckoutApi = {
         ...(input.address ? { address: input.address } : {}),
         ...(!input.address && input.pincode ? { pincode: input.pincode } : {}),
         coupon_code: input.couponCode || null,
-        payment_method: 'CASH_ON_DELIVERY',
+        payment_method: input.paymentMethod ?? 'CASH_ON_DELIVERY',
       },
       headers: { 'X-Cart-Token': cartToken },
       cache: 'no-store',
@@ -112,7 +117,13 @@ export const guestCheckoutApi = {
 
   placeOrder(
     cartToken: string,
-    input: { contact: GuestContactInput; address: GuestAddressInput; couponCode?: string | null; idempotencyKey: string },
+    input: {
+      contact: GuestContactInput;
+      address: GuestAddressInput;
+      couponCode?: string | null;
+      idempotencyKey: string;
+      paymentMethod?: PaymentMethod;
+    },
   ): Promise<Order> {
     return apiRequest<Order>('/checkout/guest', {
       method: 'POST',
@@ -120,11 +131,16 @@ export const guestCheckoutApi = {
         contact: input.contact,
         address: input.address,
         coupon_code: input.couponCode || null,
-        payment_method: 'CASH_ON_DELIVERY',
+        payment_method: input.paymentMethod ?? 'CASH_ON_DELIVERY',
       },
       headers: { 'X-Cart-Token': cartToken, 'Idempotency-Key': input.idempotencyKey },
       cache: 'no-store',
     });
+  },
+
+  /** A guest's Razorpay payment; the signature is what proves it. */
+  verifyPayment(verification: RazorpayVerification): Promise<unknown> {
+    return apiRequest('/payments/razorpay/verify-guest', { method: 'POST', body: verification, cache: 'no-store' });
   },
 
   /** Public lookup: the order number plus the phone it was placed with. */

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 
+import { useBrand } from '@/context/BrandContext';
 import { formatMoney } from '@/lib/format';
 import { confirmOnlinePayment } from '@/lib/orders/actions';
 import { payWithRazorpay, type CheckoutOutcome } from '@/lib/payments/razorpay';
@@ -15,13 +16,18 @@ import type { OnlinePaymentRequest } from '@/types/orders';
  */
 export default function PayNowButton({ request, className }: { request: OnlinePaymentRequest; className?: string }) {
   const [busy, setBusy] = useState(false);
+  const brand = useBrand();
 
   async function pay() {
     setBusy(true);
 
     let outcome: CheckoutOutcome;
     try {
-      outcome = await payWithRazorpay(request, { onAttemptFailed: message => toast.error(message) });
+      outcome = await payWithRazorpay(request, {
+        onAttemptFailed: message => toast.error(message),
+        keyId: brand.razorpayKeyId,
+        storeName: brand.name,
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not open the payment window.');
       setBusy(false);

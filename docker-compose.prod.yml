@@ -22,6 +22,7 @@ x-backend: &backend
     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     REDIS_URL: redis://redis:6379/0
     TRUST_FORWARDED_HOST: "true"
+    PUBLIC_API_URL: https://api.${PLATFORM_ROOT_DOMAIN}
     # Only Caddy and the frontends talk to the API (private network).
     FORWARDED_ALLOW_IPS: "*"
   restart: unless-stopped

@@ -12,6 +12,7 @@ from app.auth.permissions import Permission
 from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.database import get_db
+from app.core.request_context import client_ip
 from app.core.responses import ApiResponse, ok, paginated
 from app.payments.schemas import PaymentQuery, PaymentRead, RazorpayVerification
 from app.payments.serializers import payment_read
@@ -65,6 +66,51 @@ async def razorpay_webhook(
 ) -> ApiResponse[dict[str, str]]:
     result = await handle_razorpay_webhook(session, await request.body(), signature)
     return ok({"result": result}, message="Webhook received")
+
+
+@router.post(
+    "/razorpay/webhook/{tenant_id}",
+    response_model=ApiResponse[dict[str, str]],
+    summary="Receive a signed webhook from one brand's own Razorpay account",
+)
+async def brand_razorpay_webhook(
+    tenant_id: UUID,
+    request: Request,
+    signature: str | None = Header(default=None, alias="X-Razorpay-Signature"),
+    session: AsyncSession = Depends(get_db),
+) -> ApiResponse[dict[str, str]]:
+    result = await handle_razorpay_webhook(session, await request.body(), signature, tenant_id)
+    return ok({"result": result}, message="Webhook received")
+
+
+@router.post(
+    "/razorpay/verify-guest",
+    response_model=ApiResponse[PaymentRead],
+    summary="Verify a guest's Razorpay payment",
+)
+async def verify_guest_razorpay_payment(
+    request: Request,
+    data: RazorpayVerification,
+    tenant: CurrentTenant,
+    session: AsyncSession = Depends(get_db),
+) -> ApiResponse[PaymentRead]:
+    """No sign-in: the Razorpay signature (made with the brand's key secret)
+    is what proves the payment, and only a guest order can be confirmed here."""
+    settings = get_settings()
+    await rate_limit.enforce(
+        "guest-checkout",
+        str(tenant.id),
+        client_ip(request),
+        limit=settings.guest_checkout_rate_limit_attempts,
+        window_seconds=settings.commerce_rate_limit_window_seconds,
+    )
+    payment = await PaymentService(session, tenant.id).verify_guest_razorpay_payment(
+        razorpay_order_id=data.razorpay_order_id,
+        razorpay_payment_id=data.razorpay_payment_id,
+        razorpay_signature=data.razorpay_signature,
+        currency=tenant.currency,
+    )
+    return ok(payment_read(payment, tenant.currency), message="Payment verified")
 
 
 @router.get(

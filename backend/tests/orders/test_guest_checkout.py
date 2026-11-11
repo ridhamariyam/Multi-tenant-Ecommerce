@@ -69,21 +69,19 @@ async def test_a_guest_places_an_order(client, session, tenant, variant):
     assert payment.provider == "COD"
 
 
-async def test_guest_online_checkout_is_rejected_before_order_or_gateway_creation(
+async def test_guest_online_checkout_needs_a_connected_razorpay_account(
     client, session, tenant, variant, monkeypatch
 ):
-    async def unexpected_gateway_call(*args, **kwargs):
-        raise AssertionError("guest checkout must not create a Razorpay order")
+    """With no Razorpay account the order is refused before anything is created."""
+    from app.core.config import get_settings
 
-    monkeypatch.setattr(
-        "app.orders.router.PaymentService.start_online_payment", unexpected_gateway_call
-    )
+    monkeypatch.setattr(get_settings(), "razorpay_key_id", None)
     headers = await _guest_cart(client, variant["id"], 1)
 
     response = await _checkout(client, headers, payment_method="UPI")
 
-    assert response.status_code == 400, response.text
-    assert response.json()["error"]["code"] == "GUEST_ONLINE_PAYMENT_UNAVAILABLE"
+    assert response.status_code == 503, response.text
+    assert response.json()["error"]["code"] == "PAYMENT_GATEWAY_UNAVAILABLE"
     assert await session.scalar(select(Order.id).where(Order.tenant_id == tenant.id)) is None
     assert await session.scalar(select(User.id).where(User.phone == GUEST_PHONE)) is None
 

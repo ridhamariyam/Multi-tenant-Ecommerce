@@ -25,6 +25,10 @@ export interface StorefrontBrand {
   secondaryColor: string | null;
   currency: string;
   theme: string;
+  /** The brand's own Razorpay account is connected (online payment offered). */
+  onlinePayments: boolean;
+  /** Public Razorpay key id for Checkout; null when online payment is off. */
+  razorpayKeyId: string | null;
 }
 
 export type StorefrontState =
@@ -44,6 +48,7 @@ interface ResolveResponse {
     primary_color: string | null;
     secondary_color: string | null;
   };
+  payments?: { online: boolean; razorpay_key_id: string | null };
 }
 
 /** Name used only when the API is down, so a page can still say something. */
@@ -51,7 +56,7 @@ export const FALLBACK_BRAND_NAME = 'CliQ.';
 
 export const getStorefront = cache(async (): Promise<StorefrontState> => {
   try {
-    const { brand, store } = await apiRequest<ResolveResponse>('/storefront/resolve', { cache: 'no-store' });
+    const { brand, store, payments } = await apiRequest<ResolveResponse>('/storefront/resolve', { cache: 'no-store' });
     return {
       status: 'ok',
       brand: {
@@ -64,6 +69,8 @@ export const getStorefront = cache(async (): Promise<StorefrontState> => {
         secondaryColor: store.secondary_color,
         currency: brand.currency,
         theme: store.theme,
+        onlinePayments: payments?.online ?? false,
+        razorpayKeyId: payments?.razorpay_key_id ?? null,
       },
     };
   } catch (error) {

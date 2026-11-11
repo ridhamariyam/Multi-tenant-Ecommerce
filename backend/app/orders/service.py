@@ -62,7 +62,7 @@ from app.orders.schemas import (
     GstBreakdown,
     GuestContact,
 )
-from app.payments import razorpay
+from app.payments import gateway, razorpay
 from app.payments.constants import PaymentProvider, PaymentPurpose
 from app.payments.constants import PaymentStatus as CashStatus
 from app.payments.models import Payment
@@ -179,6 +179,12 @@ class Quote:
     gst_settings: GstSettings | None
 
 
+async def brand_takes_online_payment(session: AsyncSession, tenant_id: UUID) -> bool:
+    """Whether this brand has a working Razorpay account connected."""
+    async with gateway.scoped(session, tenant_id):
+        return razorpay.is_configured()
+
+
 class CheckoutService:
     """Turning a cart into an order: preview prices it, place writes it.
 
@@ -243,7 +249,7 @@ class CheckoutService:
             if replayed is not None:
                 return replayed
 
-        if payment_method is not PaymentMethod.CASH_ON_DELIVERY and not razorpay.is_configured():
+        if payment_method is not PaymentMethod.CASH_ON_DELIVERY and not await brand_takes_online_payment(self.session, self.tenant_id):
             raise ServiceUnavailableError(
                 razorpay.UNAVAILABLE,
                 error_code=PaymentErrorCode.GATEWAY_UNAVAILABLE,
@@ -300,10 +306,12 @@ class CheckoutService:
         payment_method: PaymentMethod,
         idempotency_key: str | None,
     ) -> Order:
-        if payment_method is not PaymentMethod.CASH_ON_DELIVERY:
-            raise ValidationError(
-                "Online payment is not available for guest checkout",
-                error_code=OrderErrorCode.GUEST_ONLINE_PAYMENT_UNAVAILABLE,
+        if payment_method is not PaymentMethod.CASH_ON_DELIVERY and not await brand_takes_online_payment(
+            self.session, self.tenant_id
+        ):
+            raise ServiceUnavailableError(
+                razorpay.UNAVAILABLE,
+                error_code=PaymentErrorCode.GATEWAY_UNAVAILABLE,
             )
 
         customer = await self._guest_customer(contact)
@@ -1316,7 +1324,8 @@ class OrderService:
         if payment.razorpay_order_id is None:
             return not payment.razorpay_order_creation_started
         try:
-            statuses = await razorpay.fetch_order_payment_statuses(payment.razorpay_order_id)
+            async with gateway.scoped(self.session, self.tenant_id):
+                statuses = await razorpay.fetch_order_payment_statuses(payment.razorpay_order_id)
         except ServiceUnavailableError:
             return False
         # Any payment not yet failed may still be captured, so the order is left alone.

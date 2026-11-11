@@ -7,7 +7,7 @@ import { ApiError, ApiUnreachableError } from '@/lib/api/errors';
 import { guestCheckoutApi, type GuestAddressInput, type GuestContactInput } from '@/lib/api/orders';
 import { getActionAccessToken } from '@/lib/auth/session';
 import { clearGuestCart, readGuestCart } from '@/lib/cart/guest-cart';
-import type { CheckoutPreview, Order, OrderTracking } from '@/types/orders';
+import type { CheckoutPreview, Order, OrderTracking, PaymentMethod, RazorpayVerification } from '@/types/orders';
 
 /**
  * Guest checkout.
@@ -26,6 +26,7 @@ export interface GuestCheckoutInput {
   address: GuestAddressInput;
   couponCode: string | null;
   idempotencyKey: string;
+  paymentMethod: PaymentMethod;
 }
 
 export type GuestPreviewResult = { preview: CheckoutPreview | null; error: string | null };
@@ -89,6 +90,7 @@ export async function previewGuestCheckout(input: {
   address?: GuestAddressInput | null;
   pincode?: string | null;
   couponCode?: string | null;
+  paymentMethod?: PaymentMethod;
 }): Promise<GuestPreviewResult> {
   try {
     const token = await syncedCartToken();
@@ -135,5 +137,15 @@ export async function trackOrder(orderNumber: string, phone: string): Promise<Tr
       return { tracking: null, error: 'No order matches that order number and phone number.' };
     }
     return { tracking: null, error: message(error) };
+  }
+}
+
+/** Confirm a guest's Razorpay payment. The order stays placed either way. */
+export async function confirmGuestPayment(verification: RazorpayVerification): Promise<{ ok: boolean; message: string | null }> {
+  try {
+    await guestCheckoutApi.verifyPayment(verification);
+    return { ok: true, message: null };
+  } catch (error) {
+    return { ok: false, message: message(error) };
   }
 }

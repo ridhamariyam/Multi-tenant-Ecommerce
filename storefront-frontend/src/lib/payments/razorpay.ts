@@ -57,9 +57,15 @@ function loadCheckoutScript(): Promise<void> {
  */
 export async function payWithRazorpay(
   request: OnlinePaymentRequest,
-  { onAttemptFailed }: { onAttemptFailed?: (message: string) => void } = {},
+  {
+    onAttemptFailed,
+    keyId,
+    storeName,
+  }: { onAttemptFailed?: (message: string) => void; keyId?: string | null; storeName?: string } = {},
 ): Promise<CheckoutOutcome> {
-  const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  // The brand's own Razorpay key (from /storefront/resolve); the build-time key
+  // only for deployments that still configure it.
+  const key = keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
   if (!key) throw new Error('Online payment is not set up for this store yet.');
 
   await loadCheckoutScript();
@@ -72,7 +78,7 @@ export async function payWithRazorpay(
       order_id: request.razorpayOrderId,
       amount: request.amount,
       currency: request.currency,
-      name: 'CliQ.',
+      name: storeName || 'Checkout',
       description: `Order #${request.orderNumber}`,
       prefill: {
         name: request.name,

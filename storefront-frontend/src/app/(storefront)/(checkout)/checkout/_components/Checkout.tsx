@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'react-toastify';
 
+import { useBrand } from '@/context/BrandContext';
 import { useCart } from '@/context/CartContext';
 import { confirmOnlinePayment, deleteAddress, placeOrder, previewCheckoutFor } from '@/lib/orders/actions';
 import { initialCheckoutState } from '@/lib/orders/state';
@@ -268,18 +269,21 @@ function PaymentMethodIcon({ method }: { method: PaymentMethod }) {
   );
 }
 
-function PaymentSection({
+export function PaymentSection({
   selected,
   onSelect,
   disabled,
   codUnavailableReason,
   codFee,
+  onlineUnavailableReason = null,
 }: {
   selected: PaymentMethod;
   onSelect: (method: PaymentMethod) => void;
   disabled: boolean;
   /** Set when the backend says this order cannot be paid in cash. */
   codUnavailableReason: string | null;
+  /** Set when this store has not connected an online payment account. */
+  onlineUnavailableReason?: string | null;
   codFee: string | null;
 }) {
   return (
@@ -293,7 +297,8 @@ function PaymentSection({
       <div className={styles.card}>
         {PAYMENT_OPTIONS.map(({ method, description }) => {
           const isCod = method === 'CASH_ON_DELIVERY';
-          const unavailable = isCod && codUnavailableReason !== null;
+          const reason = isCod ? codUnavailableReason : onlineUnavailableReason;
+          const unavailable = reason !== null;
           const isSelected = selected === method;
 
           return (
@@ -312,7 +317,7 @@ function PaymentSection({
               <div className={styles.methodBody}>
                 <p className={styles.methodTitle}>{PAYMENT_METHOD_LABELS[method]}</p>
                 <p className={styles.methodDesc}>
-                  {unavailable ? codUnavailableReason : isCod && codFee ? `${description} (+${codFee} fee)` : description}
+                  {unavailable ? reason : isCod && codFee ? `${description} (+${codFee} fee)` : description}
                 </p>
               </div>
               {(method === 'CREDIT_CARD' || method === 'DEBIT_CARD') && (
@@ -367,6 +372,8 @@ export default function Checkout({
 }) {
   const router = useRouter();
   const { cart, items: cartItems } = useCart();
+  const brand = useBrand();
+  const onlineUnavailableReason = brand.onlinePayments ? null : 'Not offered by this store yet';
 
   const [addresses, setAddresses] = useState(initialAddresses);
   useEffect(() => setAddresses(initialAddresses), [initialAddresses]);
@@ -395,7 +402,7 @@ export default function Checkout({
   const [idempotencyKey] = useState(generateIdempotencyKey);
   const [placeState, placeFormAction, placePending] = useActionState(placeOrder, initialCheckoutState);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(brand.onlinePayments ? 'UPI' : 'CASH_ON_DELIVERY');
   const [paying, setPaying] = useState(false);
   const [confirming, startConfirm] = useTransition();
   const openedForRef = useRef<string | null>(null);
@@ -406,8 +413,8 @@ export default function Checkout({
 
   // Cash can stop being allowed once an address or coupon changes the order.
   useEffect(() => {
-    if (codUnavailableReason && paymentMethod === 'CASH_ON_DELIVERY') setPaymentMethod('UPI');
-  }, [codUnavailableReason, paymentMethod]);
+    if (codUnavailableReason && paymentMethod === 'CASH_ON_DELIVERY' && brand.onlinePayments) setPaymentMethod('UPI');
+  }, [codUnavailableReason, paymentMethod, brand.onlinePayments]);
 
   // The total can depend on the method (a cash-on-delivery fee), so re-price
   // whenever the preview on screen was priced for a different one.
@@ -458,7 +465,11 @@ export default function Checkout({
     const orderPage = `/order-confirmation/${encodeURIComponent(request.orderNumber)}`;
     setPaying(true);
 
-    payWithRazorpay(request, { onAttemptFailed: message => toast.error(message) })
+    payWithRazorpay(request, {
+      onAttemptFailed: message => toast.error(message),
+      keyId: brand.razorpayKeyId,
+      storeName: brand.name,
+    })
       .then(outcome => {
         if (outcome.kind === 'dismissed') {
           toast.info('Payment not completed. Your order is saved -- you can pay for it from the order page.');
@@ -596,6 +607,7 @@ export default function Checkout({
               disabled={busy}
               codUnavailableReason={codUnavailableReason}
               codFee={codFee}
+              onlineUnavailableReason={onlineUnavailableReason}
             />
           </div>
 

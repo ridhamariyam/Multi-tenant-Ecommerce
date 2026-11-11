@@ -231,6 +231,14 @@ class Settings(BaseSettings):
     alert_webhook_url: str | None = Field(default=None, repr=False)
     alert_repeat_seconds: int = Field(default=3600, ge=60)
 
+    # Encrypts secrets brands store with us (their own Razorpay keys). A Fernet
+    # key; required in production. Changing it makes stored secrets unreadable
+    # (brands re-enter them), so keep it with the database backups' secrets.
+    secrets_encryption_key: str | None = Field(default=None, repr=False)
+    # Brands whose shoppers pay into the platform's own Razorpay account (the
+    # keys below). Every other brand connects its own account in its console.
+    # Empty = only the seeded operator store (SEED_TENANT_SLUG).
+    razorpay_platform_tenant_slugs: Annotated[list[str], NoDecode] = Field(default_factory=list)
     razorpay_key_id: str | None = None
     razorpay_key_secret: str | None = None
     razorpay_webhook_secret: str | None = None
@@ -246,6 +254,13 @@ class Settings(BaseSettings):
 
     online_payment_expiry_minutes: int = 30
 
+    @field_validator("razorpay_platform_tenant_slugs", mode="before")
+    @classmethod
+    def _split_slugs(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [part.strip() for part in value.split(",") if part.strip()]
+        return value
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: object) -> object:
@@ -259,6 +274,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() in {"production", "prod"}
+
+    @property
+    def platform_payment_slugs(self) -> set[str]:
+        return set(self.razorpay_platform_tenant_slugs or [self.seed_tenant_slug])
 
     @property
     def json_logs(self) -> bool:
@@ -310,6 +329,21 @@ class Settings(BaseSettings):
                 )
             if "*" in self.cors_origins:
                 raise ValueError("Refusing to start in production with CORS_ORIGINS='*'")
+            if not self.secrets_encryption_key:
+                raise ValueError(
+                    "SECRETS_ENCRYPTION_KEY is required in production (brands' payment keys "
+                    "are encrypted with it). Generate one with: python -c \"from "
+                    "cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                )
+        if self.secrets_encryption_key:
+            from cryptography.fernet import Fernet
+
+            try:
+                Fernet(self.secrets_encryption_key.encode())
+            except (ValueError, TypeError) as exc:
+                raise ValueError(
+                    "SECRETS_ENCRYPTION_KEY must be a Fernet key (32 url-safe base64 bytes)"
+                ) from exc
         if self.is_production and self.ai_provider == "mock":
             raise ValueError("AI_PROVIDER=mock is for development only")
         if self.storage_backend == "s3" and not self.s3_bucket.strip():

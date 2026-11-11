@@ -81,3 +81,50 @@ describe("Integrations setup view", () => {
     expect(within(ccavenue).getByText("EXAMPLE_SECRET_NAME")).toBeVisible();
   });
 });
+
+const gateway = (overrides: Record<string, unknown> = {}) => ({
+  source: "none", connected: false, is_enabled: false, key_id: null, mode: null, has_webhook_secret: false,
+  verified_at: null, webhook_url: "https://api.cliq.example/api/v1/payments/razorpay/webhook/t-1",
+  ...overrides,
+});
+
+describe("Razorpay connection", () => {
+  it("connects the brand's own account and never shows the secret again", async () => {
+    const { calls } = mockFetch(
+      route("GET", "/auth/me", () => ok(profile({ role: "ADMIN", permissions: ["settings.view", "settings.manage"] }))),
+      route("GET", "/admin/payment-gateway", () => ok(gateway())),
+      route("PUT", "/admin/payment-gateway", () => ok(gateway({
+        source: "own", connected: true, is_enabled: true, key_id: "rzp_live_Brand1234", mode: "live", has_webhook_secret: true,
+      }))),
+      route("GET", "/admin/integrations/google-sheets", () => ok(sheet())),
+      route("GET", "/admin/integrations", () => ok([])),
+    );
+    renderApp("/integrations");
+
+    expect(await screen.findByText("https://api.cliq.example/api/v1/payments/razorpay/webhook/t-1")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Key Id"), "rzp_live_Brand1234");
+    await userEvent.type(screen.getByLabelText("Key Secret"), "s3cret-value");
+    await userEvent.type(screen.getByLabelText("Webhook secret"), "hook-secret");
+    await userEvent.click(screen.getByRole("button", { name: "Connect Razorpay" }));
+
+    expect(await screen.findByText("Razorpay connected. Customers can now pay online.")).toBeInTheDocument();
+    const put = calls.find((c) => c.init.method === "PUT" && String(c.url).includes("payment-gateway"))!;
+    expect(JSON.parse(String(put.init.body))).toEqual({ key_id: "rzp_live_Brand1234", key_secret: "s3cret-value", webhook_secret: "hook-secret", is_enabled: true });
+    expect(screen.getByLabelText("Key Secret")).toHaveValue("");
+    expect(screen.getByText(/live — real payments/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+  });
+
+  it("tells the operator's own store it uses the platform account", async () => {
+    mockFetch(
+      route("GET", "/auth/me", () => ok(profile({ role: "ADMIN", permissions: ["settings.view", "settings.manage"] }))),
+      route("GET", "/admin/payment-gateway", () => ok(gateway({ source: "platform", connected: true, key_id: "rzp_test_Plat1234", mode: "test" }))),
+      route("GET", "/admin/integrations/google-sheets", () => ok(sheet())),
+      route("GET", "/admin/integrations", () => ok([])),
+    );
+    renderApp("/integrations");
+
+    expect(await screen.findByText(/uses the platform's Razorpay account/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Key Id")).not.toBeInTheDocument();
+  });
+});

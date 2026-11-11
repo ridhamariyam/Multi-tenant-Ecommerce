@@ -7,14 +7,22 @@ import type { StorefrontBrand } from '@/lib/storefront/brand';
 export interface BrandView {
   name: string;
   logoUrl: string | null;
+  onlinePayments: boolean;
+  razorpayKeyId: string | null;
 }
 
-const BrandContext = createContext<BrandView>({ name: 'CliQ.', logoUrl: null });
+const BrandContext = createContext<BrandView>({ name: 'CliQ.', logoUrl: null, onlinePayments: false, razorpayKeyId: null });
 
 /** The current store's name and logo, for client components (header, footer). */
 export function BrandProvider({ brand, children }: { brand: StorefrontBrand | null; children: React.ReactNode }) {
   return (
-    <BrandContext.Provider value={{ name: brand?.name ?? 'CliQ.', logoUrl: brand?.logoUrl ?? null }}>
+    <BrandContext.Provider
+      value={{
+        name: brand?.name ?? 'CliQ.',
+        logoUrl: brand?.logoUrl ?? null,
+        onlinePayments: brand?.onlinePayments ?? false,
+        razorpayKeyId: brand?.razorpayKeyId ?? null,
+      }}>
       {children}
     </BrandContext.Provider>
   );

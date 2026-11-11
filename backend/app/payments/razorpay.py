@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -25,22 +28,54 @@ class Credentials:
     timeout_seconds: float
 
 
-def is_configured() -> bool:
-    """Whether both halves of the API key are set."""
-    settings = get_settings()
-    return bool(settings.razorpay_key_id and settings.razorpay_key_secret)
+@dataclass(frozen=True)
+class Scope:
+    """The Razorpay account in use for the current brand (see app.payments.gateway)."""
+
+    credentials: Credentials | None
+    webhook_secret: str | None
 
 
-def credentials() -> Credentials:
+# Set by gateway.scoped() around a brand's payment work. Outside any scope
+# (scripts, older call sites) the platform keys from the environment apply.
+_scope: ContextVar[Scope | None] = ContextVar("razorpay_scope", default=None)
+
+
+@contextmanager
+def use_scope(scope: Scope) -> Iterator[None]:
+    token = _scope.set(scope)
+    try:
+        yield
+    finally:
+        _scope.reset(token)
+
+
+def env_credentials() -> Credentials | None:
     settings = get_settings()
     if not settings.razorpay_key_id or not settings.razorpay_key_secret:
-        raise ServiceUnavailableError(UNAVAILABLE, error_code=PaymentErrorCode.GATEWAY_UNAVAILABLE)
+        return None
     return Credentials(
         key_id=settings.razorpay_key_id,
         key_secret=settings.razorpay_key_secret,
         api_url=settings.razorpay_api_url.rstrip("/"),
         timeout_seconds=settings.razorpay_timeout_seconds,
     )
+
+
+def is_configured() -> bool:
+    """Whether the current brand (or, unscoped, the platform) can take online payments."""
+    scope = _scope.get()
+    if scope is not None:
+        return scope.credentials is not None
+    return env_credentials() is not None
+
+
+def credentials() -> Credentials:
+    scope = _scope.get()
+    creds = scope.credentials if scope is not None else env_credentials()
+    if creds is None:
+        raise ServiceUnavailableError(UNAVAILABLE, error_code=PaymentErrorCode.GATEWAY_UNAVAILABLE)
+    return creds
 
 
 def to_subunits(amount: Decimal) -> int:
@@ -101,7 +136,8 @@ def signature_is_valid(order_id: str, payment_id: str, signature: str) -> bool:
 
 def webhook_signature_valid(raw_body: bytes, signature: str) -> bool:
     """Check X-Razorpay-Signature: HMAC-SHA256 of the raw body with the webhook secret."""
-    secret = get_settings().razorpay_webhook_secret
+    scope = _scope.get()
+    secret = scope.webhook_secret if scope is not None else get_settings().razorpay_webhook_secret
     if not secret:
         return False
     expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
