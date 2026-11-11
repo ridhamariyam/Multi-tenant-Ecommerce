@@ -254,6 +254,12 @@ class Settings(BaseSettings):
     # Where merchants sign in (password-reset links). Unset = https://app.<root>/admin.
     console_url: str | None = None
 
+    # SaaS billing (brands paying for their plan) uses the platform's Razorpay
+    # keys above, with Subscriptions enabled on that account. Its webhook
+    # (https://api.<root>/api/v1/billing/razorpay/webhook) may use its own
+    # secret; unset = RAZORPAY_WEBHOOK_SECRET.
+    razorpay_billing_webhook_secret: str | None = Field(default=None, repr=False)
+
     razorpay_key_id: str | None = None
     razorpay_key_secret: str | None = None
     razorpay_webhook_secret: str | None = None

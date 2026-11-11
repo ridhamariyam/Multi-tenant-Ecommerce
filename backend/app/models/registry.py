@@ -35,6 +35,7 @@ from app.looks.models import Look, LookItem
 from app.media.models import MediaAsset
 from app.merchants.models import MerchantAccount, MerchantRefreshToken
 from app.orders.models import Order, OrderItem, OrderTrackingEvent
+from app.marketing.models import EmailCampaign
 from app.notifications.models import MerchantPasswordReset, OutboxEmail
 from app.payments.gateway import PaymentGatewayAccount
 from app.payments.models import Payment
@@ -105,6 +106,7 @@ __all__ = [
     "Payment",
     "PaymentGatewayAccount",
     "OutboxEmail",
+    "EmailCampaign",
     "MerchantPasswordReset",
     "GstDefaultRule",
     "GstSettings",

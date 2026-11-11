@@ -316,6 +316,10 @@ class CheckoutService:
 
         customer = await self._guest_customer(contact)
         self.customer_id = customer.id
+        if contact.marketing_opt_in and contact.email:
+            from app.marketing.service import set_consent
+
+            await set_consent(self.session, customer, True, str(contact.email))
 
         if idempotency_key:
             replayed = await self._replayed_order(idempotency_key, payment_method)

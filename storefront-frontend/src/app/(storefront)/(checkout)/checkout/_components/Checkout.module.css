@@ -1543,3 +1543,5 @@
     grid-template-columns: 1fr;
   }
 }
+.optIn { display: flex; flex-direction: row !important; align-items: center; justify-content: flex-start; gap: 8px; font-size: 13px; text-align: left; color: var(--cliq-text-muted, #555); }
+.optIn input { width: auto; margin: 0; }

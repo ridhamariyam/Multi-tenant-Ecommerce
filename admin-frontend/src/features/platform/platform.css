@@ -21,3 +21,12 @@
 .platform-checks li { padding: 6px 12px; border-radius: 999px; font-size: 13px; border: 1px solid var(--line, #ddd); }
 .platform-checks li.ok { color: var(--ok, #1d7a46); }
 .platform-checks li.bad { color: var(--bad, #b42318); }
+
+.platform-plan select { padding: 4px 8px; border-radius: 8px; }
+.platform-plans { display: flex; flex-direction: column; gap: 12px; }
+.platform-plan-form { display: flex; flex-direction: column; gap: 10px; }
+.platform-plan-form h3 { margin: 0; font-size: 15px; }
+.platform-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.platform-plan-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.platform-plan-flags { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; }
+.platform-plan-form button { align-self: flex-start; }

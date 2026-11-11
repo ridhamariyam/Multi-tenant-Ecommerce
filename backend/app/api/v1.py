@@ -22,6 +22,10 @@ from app.tenants import tls as tenant_tls
 from app.merchants import router as merchants
 from app.orders import router as orders
 from app.payments import gateway_router as payment_gateway
+from app.subscriptions import router as billing_routes
+from app.marketing import router as marketing
+from app.ai import router as ai_studio
+from app.looks import router as looks
 from app.payments import router as payments
 from app.pricing import router as pricing
 from app.ratings import router as ratings
@@ -66,6 +70,13 @@ for router in (
     wishlist.router,
     payments.router,
     payment_gateway.router,
+    billing_routes.router,
+    marketing.router,
+    marketing.public_router,
+    ai_studio.router,
+    ai_studio.webhook_router,
+    looks.router,
+    looks.public_router,
     payments.admin_router,
     pricing.shipping_router,
     pricing.tax_router,

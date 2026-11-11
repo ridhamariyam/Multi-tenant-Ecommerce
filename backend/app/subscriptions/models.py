@@ -10,6 +10,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -42,6 +43,9 @@ class SubscriptionPlan(IdMixin, TimestampMixin, Base):
     features: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    # The Razorpay plan for this price on the platform's account (created on
+    # first checkout; cleared when the price changes, since Razorpay plans are fixed).
+    razorpay_plan_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class BrandSubscription(IdMixin, TenantMixin, TimestampMixin, Base):
@@ -54,6 +58,7 @@ class BrandSubscription(IdMixin, TenantMixin, TimestampMixin, Base):
             name="status_valid",
         ),
         CheckConstraint("current_period_end > current_period_start", name="period_valid"),
+        Index("ix_brand_subscriptions_external_id", "external_subscription_id"),
     )
 
     plan_id: Mapped[uuid.UUID] = mapped_column(
@@ -67,3 +72,12 @@ class BrandSubscription(IdMixin, TenantMixin, TimestampMixin, Base):
         String(30), nullable=False, default="manual", server_default=text("'manual'")
     )
     external_subscription_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # The plan a started (not yet paid) Razorpay checkout is for.
+    pending_plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("subscription_plans.id", name="fk_brand_subscriptions_pending_plan_id_subscription_plans", ondelete="SET NULL"),
+        nullable=True,
+    )
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    trial_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    past_due_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

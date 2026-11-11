@@ -61,6 +61,7 @@ class UserProfile(BaseModel):
     role: str
     status: str
     is_verified: bool
+    marketing_opt_in: bool = False
     permissions: list[str] = Field(
         default_factory=list, description="Effective admin permissions (empty for customers)"
     )
@@ -80,6 +81,7 @@ class ProfileUpdate(PartialUpdate):
 
     name: str | None = Field(default=None, max_length=150)
     email: EmailStr | None = None
+    marketing_opt_in: bool | None = None
 
     @field_validator("name")
     @classmethod

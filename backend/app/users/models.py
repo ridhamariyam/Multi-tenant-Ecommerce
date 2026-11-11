@@ -91,6 +91,11 @@ class User(IdMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
     order_block_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # Marketing email consent (campaigns, cart reminders). Order emails need none.
+    marketing_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    marketing_opt_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Where marketing goes when the account has no email of its own (given at guest checkout).
+    marketing_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     @property
     def is_active(self) -> bool:

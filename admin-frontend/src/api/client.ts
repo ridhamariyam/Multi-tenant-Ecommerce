@@ -50,6 +50,7 @@ export interface RequestOptions {
   // "platform": the merchant's platform session (brand list, members, creating
   // brands). Default "brand": the open store's token, for everything else.
   session?: "brand" | "platform";
+  headers?: Record<string, string>; // extra headers, e.g. Idempotency-Key
 }
 
 let unauthorizedHandler: (() => void) | null = null;
@@ -197,7 +198,7 @@ async function refreshSession(accessToken: string | null): Promise<boolean> {
 
 async function send(path: string, options: RequestOptions, retry: boolean): Promise<Response> {
   const { method = "GET", query, body, formData, auth = true, session = "brand" } = options;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(options.headers ?? {}) };
   const platform = session === "platform";
   const accessToken = auth ? (platform ? getPlatformToken() : getToken()) : null;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;

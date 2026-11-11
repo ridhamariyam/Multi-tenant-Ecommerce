@@ -210,6 +210,10 @@ class ProductService:
 
     async def create(self, data: ProductCreate) -> Product:
         """Create a product together with its images in one transaction."""
+        from app.subscriptions.service import SubscriptionService
+
+        plans = SubscriptionService(self.session, self.tenant_id)
+        await plans.check_limit("product_limit", (await plans.usage())["products"])
         await self._require_category(data.category_id)
         slug = (
             await self._require_free_slug(data.slug)

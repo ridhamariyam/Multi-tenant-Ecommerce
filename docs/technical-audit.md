@@ -186,12 +186,12 @@ checks, builds and an update to this table.
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | **Done** (2026-11-11) — see §7 |
 | 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | **Written, partly verified** (2026-11-11) — full-stack rehearsal blocked by disk space; see §7 |
 | 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | **Done** (2026-11-11) — see §7 |
-| 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | Planned |
-| 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | Planned (billing provider BLOCKED until chosen) |
+| 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | **Done** (2026-11-11) — `e2e/`, runs on installed Chrome; see §7 |
+| 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | **Done** (2026-11-11) — Razorpay Subscriptions; live charge not verified; see §7 |
 | 9 | Merchant password reset + email provider adapter (transactional email) | **Done** (2026-11-11), SMTP delivery not live-verified (no SMTP account yet) — see §7 |
-| 10 | Customer segments/consent, abandoned carts, campaigns | Planned |
-| 11 | AI track: Celery worker service, try-on API + UI, credits API, lookbooks | Planned last (FASHN key BLOCKED) |
-| 12 | Load test (k6 or Locust) against a production-like stack | Planned |
+| 10 | Customer segments/consent, abandoned carts, campaigns | **Done** (2026-11-11) — see §7 |
+| 11 | AI track: Celery worker service, try-on API + UI, credits API, lookbooks | **Done** (2026-11-11) — FASHN generation BLOCKED on API key; see §7 |
+| 12 | Load test (k6 or Locust) against a production-like stack | **Partly done** (2026-11-11) — script + dev baseline; production-like run pending the prod rehearsal |
 
 ## 6. External dependencies still needed
 
@@ -373,4 +373,42 @@ a public server with real DNS or Let's Encrypt.
 - Merchant "Forgot password?": `POST /platform/auth/password/forgot` (same answer for unknown emails, rate limited) and `/password/reset` (single-use token stored as SHA-256, 1 hour, revokes every refresh token). Console screens `/forgot-password` and `/reset-password`.
 - Verified live (dev): reset request and 3 order confirmations queued in the outbox; nothing sent (no SMTP configured). Tests: 8 email/reset backend tests + 2 console tests.
 - Not verified: delivery through a real SMTP server — needs your SMTP account.
+
+### Step 8 — Plans and billing (2026-11-11)
+
+- Decision (user): Free (25 products, 1 team member, CliQ subdomain) / Starter ₹999 (500 products, 3, own domain) / Growth ₹2,999 (unlimited products, 10, Sheets export, AI studio + 200 credits); 14-day trial on a brand's first paid plan; prices editable by operators. Migration `d2e4f6a8b0c1` re-seeds plans; brands on the old trial plan or no plan move to Free; existing PRO (legacy, unlimited) brands — the operator's CliQ store — keep it.
+- Enforced on the server: product limit (product create), team limit (adding members), custom domains, Sheets export, AI studio. A lapsed subscription (cancelled, unpaid > 7 days, unpaid trial) falls back to Free's limits; nothing is deleted.
+- Billing (`app/subscriptions/billing.py`): Razorpay Subscriptions on the platform's account — checkout creates the subscription (with `start_at` for the trial), the console opens Razorpay Checkout, the signed result is verified (and the subscription's `notes.tenant_id` must match), webhooks `subscription.*` at `/api/v1/billing/razorpay/webhook` keep status/periods current and downgrade on cancel. Switching plans cancels the old subscription.
+- Console: Plan & billing page (usage vs limits, plan cards, upgrade, cancel). Operator console: Plans tab (prices, limits, features) and a per-brand plan picker (audited).
+- Tests: 8 backend billing/limit tests (Razorpay faked), console test. Not verified: a real Razorpay Subscriptions charge (needs your account with Subscriptions enabled).
+
+### Step 10 — Marketing: consent, segments, campaigns, abandoned carts (2026-11-11)
+
+- Consent: `users.marketing_opt_in` (+ timestamp, `marketing_email` for guests); guest checkout checkbox (only with an email), account-page toggle, `PATCH /auth/me`.
+- Campaigns (`email_campaigns`, migration `e3f5a7b9c1d2`): draft → audience count → send to a segment (everyone subscribed / ordered within N days / never ordered / tag). Sent through the email outbox, one per customer, each with a signed one-click unsubscribe link (storefront `/unsubscribe` asks for a click, so link scanners change nothing).
+- Abandoned carts: signed-in, opted-in customers with an idle (1–48 h) non-empty cart and no order since get one reminder (emails job).
+- Console: Email campaigns page. Tests: 5 backend + 1 console.
+
+### Step 11 — AI studio and lookbooks (2026-11-11)
+
+- API on the existing job/credit services: `/admin/ai/credits`, `/admin/ai/jobs` (create with Idempotency-Key, list, get, cancel, retry), `/admin/ai/outputs/{id}/review` (approve copies the private result to a public storefront image and adds it to the product), `POST /api/v1/webhooks/fashn?token=` (payload untrusted; triggers a status poll).
+- `ai-worker` (Celery worker + beat sweep) added to `docker-compose.prod.yml`; Caddy exposes the FASHN webhook path.
+- Lookbooks: `/admin/looks` (cover uploaded to the store, up to 6 pinned products with x/y hotspots, publish/hide/archive) and public `/storefront/looks`; the runway home shows a brand's published looks, falling back to the built-in CliQ looks.
+- Console: AI studio page (credits, generate, poll, approve/reject) and Lookbooks editor (click to pin).
+- Tests: 6 AI API + 3 lookbook backend tests, 3 console tests. BLOCKED: real generation needs a FASHN API key (`AI_PROVIDER=fashn`, `FASHN_API_KEY`).
+
+### Step 7 — End-to-end tests (2026-11-11)
+
+- `e2e/` (Playwright, installed Google Chrome): guest COD purchase + public tracking, two-brand isolation (titles, resolve, unknown host page), merchant console sign-in → brand → Plan & billing → Orders (needs `E2E_MERCHANT_*`).
+
+### Step 12 — Load test (2026-11-11)
+
+- `loadtest/storefront_load.py` (httpx, no extra tools): concurrent shoppers resolve the store, list and open products, create guest carts, add items, price checkout. Never places orders.
+- Dev baseline (laptop, 12 cores / 7.4 GB, API with **1** uvicorn worker, Postgres/Redis/MinIO and both Next dev servers on the same machine), 25 shoppers for 45 s:
+  4,904 requests, **108 req/s, p50 196 ms, p95 377 ms, p99 521 ms, 0 errors**. Guest-cart creation hit the per-IP limit (30/window) as designed, since all load came from one IP.
+- Not done: the same run against the production stack (`WEB_CONCURRENCY`/`API_WORKERS`=2+, Caddy, real TLS) — blocked with the prod rehearsal (disk space).
+
+### Verification summary (2026-11-11, end of session)
+
+- Backend: 1,634 tests passed in 17 folders + 6 AI tests, 0 failures. Console: 227/227 Vitest. Both frontends: `next build` succeeds. E2E: 4/4 against the dev stack. Dev database migrated to `e3f5a7b9c1d2` (backup `backend/var/backups/db-before-plans-marketing-*.dump`).
 

@@ -18,7 +18,12 @@ PAYLOAD = {
     "password": "a-long-enough-password",
 }
 
-STRONG_SECRETS = {"jwt_secret": "a" * 40, "jwt_refresh_secret": "b" * 40}
+STRONG_SECRETS = {
+    "jwt_secret": "a" * 40,
+    "jwt_refresh_secret": "b" * 40,
+    # A valid Fernet key (32 url-safe base64 bytes); production requires one.
+    "secrets_encryption_key": "dGVzdC1vbmx5LWZlcm5ldC1rZXktMzItYnl0ZXMhISE=",
+}
 
 
 @pytest.mark.parametrize("environment", sorted(KNOWN_ENVIRONMENTS))
@@ -44,3 +49,11 @@ def test_an_unknown_environment_refuses_to_start(environment):
 @pytest.mark.parametrize("environment", sorted(KNOWN_ENVIRONMENTS | {"Production", "STAGING"}))
 def test_every_known_environment_starts(environment):
     assert Settings(environment=environment, **STRONG_SECRETS).environment == environment
+
+
+def test_production_needs_a_secrets_encryption_key():
+    weak = {k: v for k, v in STRONG_SECRETS.items() if k != "secrets_encryption_key"}
+    with pytest.raises(ValidationError, match="SECRETS_ENCRYPTION_KEY is required"):
+        Settings(environment="production", **weak)
+    with pytest.raises(ValidationError, match="must be a Fernet key"):
+        Settings(environment="production", **{**weak, "secrets_encryption_key": "CHANGE_ME"})

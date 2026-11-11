@@ -1,7 +1,9 @@
 """Plans, a brand's subscription, plan limits and the monthly AI allowance.
 
-No billing provider is connected: plans change only by a platform admin and
-no money moves (billing_provider = "manual"). Responses say so.
+Brands pay through Razorpay Subscriptions (app.subscriptions.billing); the
+platform team can also set a plan by hand (billing_provider = "manual").
+A lapsed subscription (cancelled, unpaid past the grace period, or an
+unpaid trial) falls back to the Free plan's limits; nothing is deleted.
 """
 
 from __future__ import annotations
@@ -19,16 +21,14 @@ from app.core.error_codes import BillingErrorCode
 from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.subscriptions.constants import (
     DEFAULT_PLANS,
+    FALLBACK_PLAN,
+    FEATURE_LABELS,
     NEW_BRAND_PLAN,
-    TRIAL_DAYS,
+    PAST_DUE_GRACE_DAYS,
     SubscriptionStatus,
 )
 from app.subscriptions.models import BrandSubscription, SubscriptionPlan
 
-BILLING_NOTICE = (
-    "Billing is not connected yet: plans are assigned by the platform team and no "
-    "payment is taken."
-)
 
 
 def _add_month(moment: datetime) -> datetime:
@@ -57,20 +57,19 @@ async def plan_by_code(session: AsyncSession, code: str) -> SubscriptionPlan:
     return plan
 
 
-async def start_trial(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscription:
-    """A new brand's subscription. Added to the caller's transaction, not committed."""
+async def start_free(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscription:
+    """A new brand's subscription (the Free plan). Added to the caller's transaction."""
     plan = await plan_by_code(session, NEW_BRAND_PLAN)
     now = datetime.now(timezone.utc)
     subscription = BrandSubscription(
         tenant_id=tenant_id,
         plan_id=plan.id,
-        status=SubscriptionStatus.TRIALING.value,
+        status=SubscriptionStatus.ACTIVE.value,
         current_period_start=now,
-        current_period_end=now + timedelta(days=TRIAL_DAYS),
+        current_period_end=_add_month(now),
     )
     session.add(subscription)
     await session.flush()
-    await grant_allowance(session, tenant_id, plan, subscription.current_period_start)
     return subscription
 
 
@@ -116,7 +115,9 @@ class SubscriptionService:
             return None
         subscription, plan = row
         now = datetime.now(timezone.utc)
-        if subscription.status == SubscriptionStatus.ACTIVE.value:
+        # Manual plans roll forward by themselves; Razorpay-billed periods
+        # move only when Razorpay reports a charge (webhook).
+        if subscription.status == SubscriptionStatus.ACTIVE.value and subscription.billing_provider == "manual":
             rolled = False
             while subscription.current_period_end <= now:
                 subscription.current_period_start = subscription.current_period_end
@@ -127,39 +128,55 @@ class SubscriptionService:
                 await self.session.flush()
         return subscription, plan
 
-    async def require_feature(self, feature: str) -> None:
+    async def effective_plan(self) -> SubscriptionPlan | None:
+        """The plan whose limits apply right now (None = unlimited, pre-plan brand)."""
         current = await self.current()
         if current is None:
-            return
+            return None
         subscription, plan = current
-        if subscription.status in {SubscriptionStatus.CANCELLED.value, SubscriptionStatus.PAST_DUE.value}:
-            raise PermissionDeniedError(
-                "This brand's subscription is not active", error_code=BillingErrorCode.FEATURE_NOT_IN_PLAN
-            )
-        if subscription.status == SubscriptionStatus.TRIALING.value and subscription.current_period_end <= datetime.now(timezone.utc):
-            raise PermissionDeniedError(
-                "The free trial has ended. Ask the platform team to choose a plan.",
-                error_code=BillingErrorCode.FEATURE_NOT_IN_PLAN,
-            )
-        if not plan.features.get(feature, False):
-            raise PermissionDeniedError(
-                f"The {plan.name} plan does not include this feature",
-                error_code=BillingErrorCode.FEATURE_NOT_IN_PLAN,
-            )
+        if lapsed(subscription):
+            return await plan_by_code(self.session, FALLBACK_PLAN)
+        return plan
+
+    async def require_feature(self, feature: str) -> None:
+        plan = await self.effective_plan()
+        if plan is None or plan.features.get(feature, False):
+            return
+        label = FEATURE_LABELS.get(feature, feature)
+        raise PermissionDeniedError(
+            f"{label} is not included in the {plan.name} plan. Upgrade in Plan & billing.",
+            error_code=BillingErrorCode.FEATURE_NOT_IN_PLAN,
+        )
 
     async def check_limit(self, limit_name: str, current_count: int) -> None:
         """Refuse adding one more of something when the plan's limit is reached."""
-        current = await self.current()
-        if current is None:
+        plan = await self.effective_plan()
+        if plan is None:
             return
-        _, plan = current
         limit = getattr(plan, limit_name)
         if limit is not None and current_count >= limit:
-            label = limit_name.removesuffix("_limit")
+            label = {"product_limit": "products", "staff_limit": "team members", "store_limit": "stores"}.get(
+                limit_name, limit_name
+            )
             raise PermissionDeniedError(
-                f"The {plan.name} plan allows {limit} {label}s. Upgrade to add more.",
+                f"The {plan.name} plan allows {limit} {label}. Upgrade in Plan & billing to add more.",
                 error_code=BillingErrorCode.PLAN_LIMIT_REACHED,
             )
+
+    async def usage(self) -> dict[str, int]:
+        from app.brands.constants import MemberStatus
+        from app.brands.models import BrandMember
+        from app.catalogue.constants import CatalogueStatus
+        from app.catalogue.models import Product
+
+        return {
+            "products": await count_rows(
+                self.session, Product, self.tenant_id, Product.status != CatalogueStatus.ARCHIVED.value
+            ),
+            "staff": await count_rows(
+                self.session, BrandMember, self.tenant_id, BrandMember.status == MemberStatus.ACTIVE.value
+            ),
+        }
 
     async def change_plan(self, plan_code: str, status: SubscriptionStatus) -> BrandSubscription:
         plan = await plan_by_code(self.session, plan_code)
@@ -185,6 +202,19 @@ class SubscriptionService:
         await self.session.commit()
         await self.session.refresh(subscription)
         return subscription
+
+
+def lapsed(subscription: BrandSubscription, now: datetime | None = None) -> bool:
+    """Whether the subscription no longer earns its plan's limits."""
+    now = now or datetime.now(timezone.utc)
+    if subscription.status == SubscriptionStatus.CANCELLED.value:
+        return True
+    if subscription.status == SubscriptionStatus.PAST_DUE.value:
+        since = subscription.past_due_since or subscription.current_period_end
+        return now - since > timedelta(days=PAST_DUE_GRACE_DAYS)
+    if subscription.status == SubscriptionStatus.TRIALING.value:
+        return subscription.current_period_end <= now
+    return False
 
 
 async def count_rows(session: AsyncSession, model, tenant_id: uuid.UUID, *where) -> int:

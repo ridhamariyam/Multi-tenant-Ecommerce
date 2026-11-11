@@ -11,6 +11,10 @@ import Brands from "./screens/Brands";
 import PlatformConsole from "./features/platform/PlatformConsole";
 import StoreSection from "./features/store/StoreSection";
 import TeamSection from "./features/store/TeamSection";
+import BillingSection from "./features/billing/BillingSection";
+import CampaignsSection from "./features/marketing/CampaignsSection";
+import AiStudioSection from "./features/ai/AiStudioSection";
+import LooksSection from "./features/looks/LooksSection";
 import { Profile, Settings } from "./screens/Account";
 import DashboardOverview from "./features/overview/DashboardOverview";
 import OrderSection from "./features/orders/OrderSection";
@@ -93,6 +97,10 @@ export function AppRoutes() {
         <Route path="store" element={<RequireBrand><StoreSection /></RequireBrand>} />
         <Route path="domains" element={<Navigate to="/store" replace />} />
         <Route path="team" element={<RequireBrand><TeamSection /></RequireBrand>} />
+        <Route path="billing" element={<RequireBrand><BillingSection /></RequireBrand>} />
+        <Route path="campaigns" element={guard(P.customersView, <CampaignsSection />)} />
+        <Route path="lookbooks" element={guard(P.catalogueView, <LooksSection />)} />
+        <Route path="ai-studio" element={<RequireBrand>{guard(P.catalogueView, <AiStudioSection />)}</RequireBrand>} />
         <Route path="audit-logs" element={guard(P.audit, <AuditLogSection />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

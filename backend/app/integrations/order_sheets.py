@@ -207,6 +207,9 @@ class OrderSheetService:
                 )
 
         if is_enabled:
+            from app.subscriptions.service import SubscriptionService
+
+            await SubscriptionService(self.session, self.tenant_id).require_feature("sheets_export")
             if spreadsheet_id is None:
                 raise ValidationError(
                     "Add the spreadsheet before turning the export on.",

@@ -1,3 +1,4 @@
+import { apiRequest } from '@/lib/api/client';
 import { catalogueApi } from '@/lib/api/catalogue';
 import { orderSizes } from '@/lib/catalogue/size';
 import { STOREFRONT_CURRENCY } from '@/lib/currency';
@@ -5,7 +6,7 @@ import { formatMoney } from '@/lib/format';
 import { mediaUrl } from '@/lib/media';
 import type { ProductStorefront, VariantStorefront } from '@/types/catalogue';
 
-import { DEFAULT_PINS, RUNWAY_LOOKS } from './config';
+import { DEFAULT_PINS, RUNWAY_LOOKS, type RunwayLookConfig } from './config';
 
 export interface RunwayVariant {
   id: string;
@@ -103,16 +104,40 @@ function toPiece(product: ProductStorefront, index: number, pin?: [number, numbe
  * that fails (deleted, draft, API down) is dropped rather than failing the
  * page: the look then simply shows fewer pieces.
  */
+interface PublishedLook {
+  title: string;
+  cover_url: string | null;
+  pins: { product_slug: string; x: number; y: number }[];
+}
+
+/** The brand's own published lookbooks (console → Lookbooks), as runway looks. */
+async function brandLooks(): Promise<RunwayLookConfig[]> {
+  const looks = await apiRequest<PublishedLook[]>('/storefront/looks', { revalidate: 60 }).catch(() => []);
+  return looks
+    .filter(l => l.cover_url && l.pins.length)
+    .map(l => {
+      const src = mediaUrl(l.cover_url) ?? l.cover_url!;
+      return {
+        name: l.title,
+        model: { src, srcLarge: src },
+        pieces: l.pins.map(p => ({ slug: p.product_slug, pin: [Math.round(p.x * 100), Math.round(p.y * 100)] as [number, number] })),
+      };
+    });
+}
+
 export async function loadRunwayLooks(): Promise<RunwayLook[]> {
-  const slugs = [...new Set(RUNWAY_LOOKS.flatMap(l => l.pieces.map(p => p.slug)))];
+  const own = await brandLooks();
+  // A brand's own lookbooks win; the built-in looks only fill in until it has some.
+  const configured = own.length ? own : RUNWAY_LOOKS;
+  const slugs = [...new Set(configured.flatMap(l => l.pieces.map(p => p.slug)))];
   const fetched = await Promise.all(
     slugs.map(slug => catalogueApi.getProductBySlug(slug).then(p => [slug, p] as const, () => [slug, null] as const)),
   );
   const bySlug = new Map(fetched);
 
-  return RUNWAY_LOOKS.map(look => {
+  return configured.map(look => {
     const pieces: RunwayPiece[] = [];
-    for (const cfg of look.pieces.slice(0, 3)) {
+    for (const cfg of look.pieces.slice(0, own.length ? 6 : 3)) {
       const product = bySlug.get(cfg.slug);
       if (product) pieces.push(toPiece(product, pieces.length, cfg.pin, cfg.tag));
     }

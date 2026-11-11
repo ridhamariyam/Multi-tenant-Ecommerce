@@ -134,3 +134,15 @@ function safeRedirect(target: string): string {
   if (!target.startsWith('/') || target.startsWith('//')) return '/';
   return target;
 }
+
+/** Turn marketing email on or off for the signed-in customer. */
+export async function setMarketingConsent(optIn: boolean, email?: string | null): Promise<{ ok: boolean; message: string | null }> {
+  const token = await getActionAccessToken();
+  if (!token) return { ok: false, message: 'Sign in again to change this.' };
+  try {
+    await authApi.updateMe(token, email ? { marketing_opt_in: optIn, email } : { marketing_opt_in: optIn });
+    return { ok: true, message: null };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : 'Could not save.' };
+  }
+}

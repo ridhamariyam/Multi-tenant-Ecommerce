@@ -38,6 +38,8 @@ class PlatformBrandRead(BaseModel):
     member_count: int
     suspended_at: datetime | None
     suspension_reason: str | None
+    plan_code: str | None = None
+    subscription_status: str | None = None
 
 
 class BrandQuery(PageParams):
@@ -63,7 +65,18 @@ async def _platform_read(session: AsyncSession, tenant: Tenant) -> PlatformBrand
             BrandMember.tenant_id == tenant.id, BrandMember.status == MemberStatus.ACTIVE.value
         )
     )
+    from app.subscriptions.models import BrandSubscription, SubscriptionPlan
+
+    plan = (
+        await session.execute(
+            select(SubscriptionPlan.code, BrandSubscription.status)
+            .join(SubscriptionPlan, SubscriptionPlan.id == BrandSubscription.plan_id)
+            .where(BrandSubscription.tenant_id == tenant.id)
+        )
+    ).first()
     return PlatformBrandRead(
+        plan_code=plan.code if plan else None,
+        subscription_status=plan.status if plan else None,
         brand=BrandRead.model_validate(tenant),
         store=store_read(store) if store else None,
         member_count=members or 0,

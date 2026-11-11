@@ -126,6 +126,8 @@ class GuestContact(StrictModel):
     name: str = Field(min_length=1, max_length=150)
     phone: NormalizedPhone
     email: EmailStr | None = None
+    # Agreed to marketing email (new arrivals, offers). Needs an email.
+    marketing_opt_in: bool = False
 
     _strip = field_validator("name")(not_blank)
 

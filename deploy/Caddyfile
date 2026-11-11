@@ -38,7 +38,7 @@ app.{$PLATFORM_ROOT_DOMAIN} {
 api.{$PLATFORM_ROOT_DOMAIN} {
 	import common
 	# The API is internal except for webhooks, uploaded media and health.
-	@public path /api/v1/payments/razorpay/webhook* /api/v1/courier-webhooks/* /media/* /health /health/ready
+	@public path /api/v1/payments/razorpay/webhook* /api/v1/billing/razorpay/webhook /api/v1/webhooks/fashn /api/v1/courier-webhooks/* /media/* /health /health/ready
 	handle @public {
 		request_body {
 			max_size 25MB

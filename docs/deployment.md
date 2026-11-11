@@ -59,7 +59,16 @@ docker compose -f docker-compose.prod.yml --env-file .env.production \
 
 Then, at the providers (when you have accounts):
 
-- Razorpay webhook: `https://api.<root>/api/v1/payments/razorpay/webhook`, secret = `RAZORPAY_WEBHOOK_SECRET`
+- Razorpay (the platform's account), two webhooks:
+  - payments for your own store: `https://api.<root>/api/v1/payments/razorpay/webhook` —
+    events `payment.captured`, `order.paid`, `refund.processed`, `refund.failed`; secret = `RAZORPAY_WEBHOOK_SECRET`
+  - plan billing: `https://api.<root>/api/v1/billing/razorpay/webhook` — events
+    `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`,
+    `subscription.cancelled`, `subscription.completed`, `subscription.resumed`;
+    secret = `RAZORPAY_BILLING_WEBHOOK_SECRET` (or the same secret). Enable **Subscriptions** on the account.
+- Every other brand connects **its own** Razorpay account in its console
+  (Integrations → Online payments); the console shows the brand its webhook URL.
+- SMTP: set `SMTP_*` and `EMAIL_FROM_ADDRESS` on a domain with SPF and DKIM configured at your provider.
 - Shiprocket tracking webhook: `https://api.<root>/api/v1/courier-webhooks/tracking`, token = `SHIPROCKET_WEBHOOK_TOKEN`
 
 ## Updating (deploy procedure)

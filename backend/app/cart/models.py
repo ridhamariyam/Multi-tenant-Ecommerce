@@ -87,6 +87,8 @@ class Cart(IdMixin, TenantMixin, TimestampMixin, Base):
         default=lambda: datetime.now(timezone.utc),
         server_default=func.now(),
     )
+    # When the abandoned-cart reminder went out (once per cart).
+    reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class CartItem(IdMixin, TenantMixin, TimestampMixin, Base):

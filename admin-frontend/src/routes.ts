@@ -23,6 +23,7 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { path: "/orders", label: "Orders", permission: P.ordersView },
       { path: "/customers", label: "Customers", permission: P.customersView },
+      { path: "/campaigns", label: "Email campaigns", permission: P.customersView },
       { path: "/payments", label: "Payments", permission: P.paymentsView },
       { path: "/cod", label: "Cash on delivery", permission: P.paymentsView },
       { path: "/coupons", label: "Coupons", permission: P.couponsView },
@@ -35,6 +36,8 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { path: "/categories", label: "Categories", permission: P.catalogueView },
       { path: "/inventory", label: "Inventory", permission: P.catalogueView },
       { path: "/reviews", label: "Reviews", permission: P.reviewsView },
+      { path: "/ai-studio", label: "AI studio", permission: P.catalogueView, brandOnly: true },
+      { path: "/lookbooks", label: "Lookbooks", permission: P.catalogueView },
     ],
   },
   {
@@ -46,6 +49,7 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { path: "/store", label: "Store & branding", adminOnly: true, brandOnly: true },
       { path: "/team", label: "Team", adminOnly: true, brandOnly: true },
+      { path: "/billing", label: "Plan & billing", adminOnly: true, brandOnly: true },
     ],
   },
   {

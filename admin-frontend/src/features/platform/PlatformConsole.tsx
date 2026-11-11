@@ -11,6 +11,8 @@ import {
   reinstateBrand,
   suspendBrand,
 } from "../../api/platform";
+import { assignPlan, listPlans, savePlan } from "../../api/billing";
+import type { Plan } from "../../api/billing";
 import { useAuth } from "../../auth/AuthContext";
 import ConfirmButton from "../../components/common/ConfirmButton";
 import Modal from "../../components/common/Modal";
@@ -21,8 +23,8 @@ import { useApi } from "../../hooks/useApi";
 import type { DomainCheck, PlatformBrand, PlatformDomain } from "../../types/platform";
 import "./platform.css";
 
-type Tab = "brands" | "domains" | "system";
-const TAB_LABELS: Record<Tab, string> = { brands: "Brands", domains: "Domains", system: "System" };
+type Tab = "brands" | "domains" | "plans" | "system";
+const TAB_LABELS: Record<Tab, string> = { brands: "Brands", domains: "Domains", plans: "Plans", system: "System" };
 
 /**
  * The CliQ. operator console: platform totals, brands (suspend / reinstate)
@@ -51,13 +53,13 @@ export default function PlatformConsole() {
         <h1>Platform</h1>
         <Overview />
         <div className="tabs" role="tablist" aria-label="Platform sections">
-          {(["brands", "domains", "system"] as Tab[]).map((t) => (
+          {(["brands", "domains", "plans", "system"] as Tab[]).map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
               {TAB_LABELS[t]}
             </button>
           ))}
         </div>
-        {tab === "brands" ? <BrandsTab /> : tab === "domains" ? <DomainsTab /> : <SystemTab />}
+        {tab === "brands" ? <BrandsTab /> : tab === "domains" ? <DomainsTab /> : tab === "plans" ? <PlansTab /> : <SystemTab />}
       </main>
     </div>
   );
@@ -124,6 +126,7 @@ function BrandsTab() {
                 {suspended && row.suspension_reason && <span className="platform-reason">Suspended: {row.suspension_reason}</span>}
               </div>
               <div className="platform-row-badges">
+                <PlanPicker brandId={row.brand.id} brandName={row.brand.name} current={row.plan_code ?? null} onChanged={() => brands.reload()} />
                 <span className={`badge ${suspended ? "badge-bad" : "badge-ok"}`}>{suspended ? "Suspended" : "Active"}</span>
                 {row.store && <span className={`badge ${row.store.published ? "badge-ok" : "badge-warn"}`}>{row.store.published ? "Live" : "Unpublished"}</span>}
               </div>
@@ -324,5 +327,98 @@ function SystemTab() {
         </tbody>
       </table></div>
     </section>
+  );
+}
+
+let plansCache: ReturnType<typeof listPlans> | null = null;
+const allPlans = () => (plansCache ??= listPlans().catch((e) => { plansCache = null; throw e; }));
+
+/** Put a brand on a plan by hand (e.g. a deal paid by bank transfer). Audited. */
+function PlanPicker({ brandId, brandName, current, onChanged }: { brandId: string; brandName: string; current: string | null; onChanged: () => void }) {
+  const plans = useApi(allPlans, []);
+  const action = useAction();
+  return (
+    <label className="platform-plan">
+      <select
+        aria-label={`Plan for ${brandName}`}
+        value={current ?? ""}
+        disabled={action.busy || !plans.data}
+        onChange={async (e) => {
+          if (await action.run(() => assignPlan(brandId, e.target.value), `${brandName} moved to ${e.target.value}.`, "Could not change plan")) onChanged();
+        }}
+      >
+        {!current && <option value="">No plan</option>}
+        {(plans.data ?? []).map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
+      </select>
+      {action.status?.type === "error" && <span className="platform-reason">{action.status.text}</span>}
+    </label>
+  );
+}
+
+/** Prices and limits of each plan. A price change applies to new subscriptions. */
+function PlansTab() {
+  const plans = useApi(() => listPlans(), []);
+  if (plans.error) return <div className="status status-error" role="alert">{plans.error}</div>;
+  if (!plans.data) return <div className="state">Loading…</div>;
+  return (
+    <section aria-label="Plans" className="platform-plans">
+      <p className="muted">A new price applies to new subscriptions; brands already paying keep their price until they change plan.</p>
+      {plans.data.map((p) => <PlanEditor key={p.code} plan={p} />)}
+    </section>
+  );
+}
+
+function PlanEditor({ plan }: { plan: Plan }) {
+  const [form, setForm] = useState({
+    name: plan.name,
+    price: String(plan.monthly_price / 100),
+    credits: String(plan.monthly_ai_credits),
+    products: plan.product_limit === null ? "" : String(plan.product_limit),
+    staff: plan.staff_limit === null ? "" : String(plan.staff_limit),
+    is_active: plan.is_active,
+    features: plan.features,
+  });
+  const action = useAction();
+  const num = (v: string) => (v.trim() === "" ? null : Math.max(0, Math.round(Number(v))));
+  return (
+    <form
+      className="panel platform-plan-form"
+      aria-label={`Plan ${plan.code}`}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await action.run(
+          () => savePlan(plan.code, {
+            name: form.name.trim(),
+            monthly_price: Math.round(Number(form.price) * 100),
+            monthly_ai_credits: num(form.credits) ?? 0,
+            product_limit: num(form.products),
+            staff_limit: num(form.staff),
+            is_active: form.is_active,
+            features: form.features,
+          }),
+          `${form.name} saved.`,
+          "Could not save",
+        );
+      }}
+    >
+      <h3>{plan.code}</h3>
+      <StatusMessage status={action.status} />
+      <div className="platform-plan-grid">
+        <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+        <label>Price ₹/month<input inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></label>
+        <label>AI credits/month<input inputMode="numeric" value={form.credits} onChange={(e) => setForm({ ...form, credits: e.target.value })} /></label>
+        <label>Products (empty = unlimited)<input inputMode="numeric" value={form.products} onChange={(e) => setForm({ ...form, products: e.target.value })} /></label>
+        <label>Team members (empty = unlimited)<input inputMode="numeric" value={form.staff} onChange={(e) => setForm({ ...form, staff: e.target.value })} /></label>
+      </div>
+      <div className="platform-plan-flags">
+        {Object.keys(form.features).map((f) => (
+          <label key={f} className="check">
+            <input type="checkbox" checked={!!form.features[f]} onChange={(e) => setForm({ ...form, features: { ...form.features, [f]: e.target.checked } })} /> {f.replace(/_/g, " ")}
+          </label>
+        ))}
+        <label className="check"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /> Offered to brands</label>
+      </div>
+      <button className="primary" disabled={action.busy}>Save {plan.code}</button>
+    </form>
   );
 }

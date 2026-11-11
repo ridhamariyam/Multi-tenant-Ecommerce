@@ -132,6 +132,9 @@ class StoreService:
         )
 
     async def add_domain(self, data: DomainCreate) -> TenantDomain:
+        from app.subscriptions.service import SubscriptionService
+
+        await SubscriptionService(self.session, self.tenant.id).require_feature("custom_domains")
         root = get_settings().platform_root_domain.lower()
         if data.domain == root or data.domain.endswith(f".{root}"):
             raise ValidationError(

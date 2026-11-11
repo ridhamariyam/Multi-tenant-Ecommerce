@@ -104,6 +104,8 @@ export interface PlatformBrand {
   member_count: number;
   suspended_at: string | null;
   suspension_reason: string | null;
+  plan_code?: string | null;
+  subscription_status?: string | null;
 }
 
 export interface PlatformDomain {

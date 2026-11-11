@@ -212,3 +212,53 @@ describe("password reset", () => {
     expect(JSON.parse(String(calls[0].init.body))).toEqual({ token: "abc123token", password: "brand-new-pass" });
   });
 });
+
+const PLAN = (code: string, name: string, price: number, products: number | null, domains: boolean) => ({
+  code, name, monthly_price: price, currency: "INR", monthly_ai_credits: 0, product_limit: products, staff_limit: 3,
+  features: { custom_domains: domains, sheets_export: false, ai_studio: false, lookbooks: true }, is_active: true,
+});
+const FREE = PLAN("FREE", "Free", 0, 25, false);
+const STARTER = PLAN("STARTER", "Starter", 99900, 500, true);
+const billing = (plan = FREE, extra: Record<string, unknown> = {}) => ({
+  plan, effective_plan: plan,
+  subscription: { status: "ACTIVE", billing_provider: "manual", current_period_start: "2026-11-11T00:00:00Z", current_period_end: "2026-12-11T00:00:00Z", cancel_at_period_end: false, trial_used: false, lapsed: false },
+  usage: { products: 3, staff: 1 }, plans: [FREE, STARTER], online_billing: true, ...extra,
+});
+
+describe("plan & billing", () => {
+  it("shows usage against the plan and upgrades through Razorpay", async () => {
+    saveTokens("brand-access", null);
+    setBrandId("brand-1");
+    savePlatformTokens("platform-access", "platform-refresh");
+    const opened: Record<string, unknown>[] = [];
+    (window as unknown as { Razorpay: unknown }).Razorpay = class {
+      constructor(private options: Record<string, unknown>) { opened.push(options); }
+      on() {}
+      open() {
+        (this.options.handler as (r: unknown) => void)({ razorpay_payment_id: "pay_1", razorpay_subscription_id: "sub_1", razorpay_signature: "sig" });
+      }
+    };
+    const { calls } = mockFetch(
+      route("GET", "/platform/auth/me", () => ok(ACCOUNT)),
+      route("GET", "/auth/me", () => ok(ADMIN)),
+      route("GET", "/brand/billing", () => ok(billing())),
+      route("POST", "/brand/billing/checkout", () => ok({ subscription_id: "sub_1", key_id: "rzp_test_Plat", plan_code: "STARTER", plan_name: "Starter", amount: 99900, currency: "INR", trial_days: 14 })),
+      route("POST", "/brand/billing/confirm", () => ok(billing(STARTER, { subscription: { status: "TRIALING", billing_provider: "razorpay", current_period_start: "2026-11-11T00:00:00Z", current_period_end: "2026-11-25T00:00:00Z", cancel_at_period_end: false, trial_used: true, lapsed: false } }))),
+      route("GET", /\/api\/v1\/admin\//, () => ok([])),
+    );
+    renderAt("/billing");
+
+    expect(await screen.findByRole("heading", { name: "Current plan: Free" })).toBeInTheDocument();
+    expect(screen.getByText("Products").nextSibling).toHaveTextContent("3 / 25");
+    const starter = screen.getByRole("region", { name: "Starter" });
+    await userEvent.click(within(starter).getByRole("button", { name: "Start 14-day free trial" }));
+
+    expect(await screen.findByText("You're on Starter.")).toBeInTheDocument();
+    expect(opened[0]).toMatchObject({ key: "rzp_test_Plat", subscription_id: "sub_1" });
+    const confirm = calls.find((c) => c.url.pathname === "/api/v1/brand/billing/confirm")!;
+    expect(JSON.parse(String(confirm.init.body))).toEqual({ razorpay_payment_id: "pay_1", razorpay_subscription_id: "sub_1", razorpay_signature: "sig" });
+    expect(screen.getByRole("heading", { name: "Current plan: Starter" })).toBeInTheDocument();
+    expect(screen.getByText(/Free trial/)).toBeInTheDocument();
+    delete (window as unknown as { Razorpay?: unknown }).Razorpay;
+  });
+});

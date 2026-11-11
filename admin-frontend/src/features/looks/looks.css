@@ -1,0 +1,11 @@
+.looks-grid { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.look-card { display: flex; flex-direction: column; gap: 6px; }
+.look-card img, .look-empty { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; background: #f2f2f2; display: grid; place-items: center; color: #888; }
+.look-editor { margin-bottom: 16px; }
+.look-canvas { position: relative; max-width: 360px; cursor: crosshair; user-select: none; }
+.look-canvas img { width: 100%; display: block; border-radius: 10px; }
+.look-pin { position: absolute; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; background: #111; color: #fff; font-size: 12px; display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.look-pin.is-active { background: #c48a2c; }
+.look-pins { display: flex; flex-direction: column; gap: 8px; padding-left: 18px; }
+.look-pins li label { display: inline-flex; gap: 8px; align-items: center; margin-right: 8px; }
+.look-actions { display: flex; flex-wrap: wrap; gap: 8px; }

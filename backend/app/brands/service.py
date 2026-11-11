@@ -29,6 +29,7 @@ from app.core.error_codes import BrandErrorCode, MerchantErrorCode
 from app.core.exceptions import ConflictError, NotFoundError, PermissionDeniedError
 from app.core.slugs import slugify, with_suffix
 from app.merchants.models import MerchantAccount
+from app.subscriptions.service import SubscriptionService, start_free
 from app.stores.models import Store
 from app.stores.service import check_subdomain_available, store_read
 from app.tenants.models import Tenant
@@ -117,6 +118,7 @@ class BrandService:
             self.session.add_all([membership, store])
             await self.session.flush()
             await ensure_tenant_defaults(self.session, tenant)
+            await start_free(self.session, tenant.id)
             await self.session.commit()
             for row in (tenant, store, membership):
                 await self.session.refresh(row)
@@ -280,6 +282,8 @@ class BrandService:
         )
         if existing is not None and existing.status == MemberStatus.ACTIVE.value:
             raise ConflictError("Already a member", error_code=BrandErrorCode.ALREADY_MEMBER)
+        plans = SubscriptionService(self.session, brand_id)
+        await plans.check_limit("staff_limit", (await plans.usage())["staff"])
 
         user_role, permissions = admin_user_for_role(data.role)
         if existing is not None:

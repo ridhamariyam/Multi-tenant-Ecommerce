@@ -19,6 +19,7 @@ export interface UserProfile {
   role: UserRole;
   status: UserStatus;
   is_verified: boolean;
+  marketing_opt_in?: boolean;
 }
 
 export interface Tenant {

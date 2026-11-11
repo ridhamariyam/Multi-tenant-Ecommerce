@@ -42,6 +42,10 @@ export const authApi = {
     return apiRequest<UserProfile>('/auth/me', { token, cache: 'no-store' });
   },
 
+  updateMe(token: string, body: { marketing_opt_in?: boolean; email?: string | null }): Promise<UserProfile> {
+    return apiRequest<UserProfile>('/auth/me', { method: 'PATCH', token, body, cache: 'no-store' });
+  },
+
   /** Erase the account. Past orders survive, stripped of the person. */
   deleteAccount(token: string): Promise<null> {
     return apiRequest<null>('/auth/me', { method: 'DELETE', token, cache: 'no-store' });

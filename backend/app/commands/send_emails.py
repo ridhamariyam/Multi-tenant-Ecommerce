@@ -9,12 +9,14 @@ import asyncio
 
 from app.core.database import AsyncSessionLocal, dispose_engine
 from app.notifications import email
+from app.marketing.service import queue_cart_reminders
 from app.notifications.orders import queue_order_confirmations
 
 
 async def send_emails() -> dict[str, int]:
     async with AsyncSessionLocal() as session:
         queued = await queue_order_confirmations(session)
+        queued += await queue_cart_reminders(session)
         delivered = await email.send_due(session)
     return {"queued": queued, **delivered}
 

@@ -1,0 +1,8 @@
+.ai-balance { font-size: 15px; margin: 0 0 14px; }
+.ai-jobs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.ai-job { border-top: 1px solid var(--line, #e5e5e5); padding-top: 12px; }
+.ai-job-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ai-outputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.ai-output { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.ai-output img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; background: #f2f2f2; }
+.ai-output figcaption { display: flex; gap: 6px; flex-wrap: wrap; }

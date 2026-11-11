@@ -68,6 +68,7 @@ export default function GuestCheckout({ availableOffers }: { availableOffers: Of
   const brand = useBrand();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH_ON_DELIVERY');
   const [paid, setPaid] = useState(false);
+  const [optIn, setOptIn] = useState(false);
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Fields, string>>>({});
@@ -143,7 +144,12 @@ export default function GuestCheckout({ availableOffers }: { availableOffers: Of
     setPlacing(true);
     setPlaceError(null);
     const result = await placeGuestOrder({
-      contact: { name: fields.name.trim(), phone: fields.phone.trim(), email: fields.email.trim() || null },
+      contact: {
+        name: fields.name.trim(),
+        phone: fields.phone.trim(),
+        email: fields.email.trim() || null,
+        marketing_opt_in: optIn && !!fields.email.trim(),
+      },
       address: {
         full_name: fields.name.trim(),
         phone: fields.phone.trim(),
@@ -249,6 +255,15 @@ export default function GuestCheckout({ availableOffers }: { availableOffers: Of
                   maxLength: 16,
                 })}
                 {input('email', 'Email (optional)', { type: 'email', autoComplete: 'email', maxLength: 255 })}
+                <label className={`${styles.formField} ${styles.formFieldFull} ${styles.optIn}`}>
+                  <input
+                    type="checkbox"
+                    checked={optIn}
+                    disabled={placing || !fields.email.trim()}
+                    onChange={event => setOptIn(event.target.checked)}
+                  />{' '}
+                  Email me new arrivals and offers (unsubscribe any time)
+                </label>
               </div>
             </section>
 

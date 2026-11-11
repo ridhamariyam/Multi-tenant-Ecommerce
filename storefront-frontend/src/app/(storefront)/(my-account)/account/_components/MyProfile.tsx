@@ -12,6 +12,7 @@ import { initialCheckoutState } from '@/lib/orders/state';
 import type { UserProfile } from '@/types/auth';
 import type { Address } from '@/types/addresses';
 
+import EmailPreferences from './EmailPreferences';
 import styles from './MyProfile.module.css';
 
 function Icon({ children }: { children: React.ReactNode }) {
@@ -193,6 +194,7 @@ export default function MyProfile({
                   <small>Your login identifier cannot be changed.</small>
                 </label>
               </div>
+              <EmailPreferences initial={!!user.marketing_opt_in} hasEmail={!!user.email} />
             </section>
 
             {/* My Addresses */}

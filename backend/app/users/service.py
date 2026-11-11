@@ -82,6 +82,11 @@ class UserService:
     async def update_profile(self, user: User, data: ProfileUpdate) -> User:
         """Change the user's own name and/or email; an email must stay unique per tenant."""
         changes = data.model_dump(exclude_unset=True)
+        opt_in = changes.pop("marketing_opt_in", None)
+        if opt_in is not None:
+            from app.marketing.service import set_consent
+
+            await set_consent(self.session, user, opt_in)
 
         if "email" in changes and changes["email"] is not None:
             email = str(changes["email"]).strip().lower()

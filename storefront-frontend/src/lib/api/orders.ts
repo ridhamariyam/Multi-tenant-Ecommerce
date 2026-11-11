@@ -84,6 +84,7 @@ export interface GuestContactInput {
   name: string;
   phone: string;
   email?: string | null;
+  marketing_opt_in?: boolean;
 }
 
 /**
