@@ -4,6 +4,7 @@ import type {
   PlatformBrand,
   PlatformDomain,
   PlatformOverview,
+  SystemHealth,
   BrandMembership,
   BrandRegistered,
   BrandToken,
@@ -75,3 +76,4 @@ export const platformCheckDomain = (domainId: string) =>
   request<DomainCheck>(`/platform/admin/domains/${encodeURIComponent(domainId)}/check`, { method: "POST", session: "platform" });
 export const platformVerifyDomain = (domainId: string) =>
   request<StoreDomain>(`/platform/admin/domains/${encodeURIComponent(domainId)}/verify`, { method: "POST", session: "platform" });
+export const platformSystem = () => request<SystemHealth>("/platform/admin/system", { session: "platform" });

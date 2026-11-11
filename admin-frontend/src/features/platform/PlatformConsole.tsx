@@ -6,6 +6,7 @@ import {
   platformCheckDomain,
   platformDomains,
   platformOverview,
+  platformSystem,
   platformVerifyDomain,
   reinstateBrand,
   suspendBrand,
@@ -20,7 +21,8 @@ import { useApi } from "../../hooks/useApi";
 import type { DomainCheck, PlatformBrand, PlatformDomain } from "../../types/platform";
 import "./platform.css";
 
-type Tab = "brands" | "domains";
+type Tab = "brands" | "domains" | "system";
+const TAB_LABELS: Record<Tab, string> = { brands: "Brands", domains: "Domains", system: "System" };
 
 /**
  * The CliQ. operator console: platform totals, brands (suspend / reinstate)
@@ -49,13 +51,13 @@ export default function PlatformConsole() {
         <h1>Platform</h1>
         <Overview />
         <div className="tabs" role="tablist" aria-label="Platform sections">
-          {(["brands", "domains"] as Tab[]).map((t) => (
+          {(["brands", "domains", "system"] as Tab[]).map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
-              {t === "brands" ? "Brands" : "Domains"}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </div>
-        {tab === "brands" ? <BrandsTab /> : <DomainsTab />}
+        {tab === "brands" ? <BrandsTab /> : tab === "domains" ? <DomainsTab /> : <SystemTab />}
       </main>
     </div>
   );
@@ -260,5 +262,67 @@ function DomainRow({ row, onChanged }: { row: PlatformDomain; onChanged: () => v
       )}
       <StatusMessage status={action.status} />
     </li>
+  );
+}
+
+const JOB_STATUS_LABEL: Record<string, string> = { ok: "OK", failed: "Failed", stale: "Not running", never_ran: "Never ran" };
+
+function when(value: string | null): string {
+  return value ? new Date(value).toLocaleString() : "—";
+}
+
+/** Dependencies, background jobs and which providers still need credentials. */
+function SystemTab() {
+  const health = useApi(() => platformSystem(), []);
+  if (health.loading && !health.data) return <div className="state">Loading…</div>;
+  if (health.error) return <div className="status status-error" role="alert">{health.error}</div>;
+  const h = health.data;
+  if (!h) return null;
+  const checks: [string, boolean][] = [
+    ["Database", h.database],
+    ["Redis", h.redis],
+    ["Error reporting", h.error_reporting],
+    ["Alerts", h.alerts],
+  ];
+  return (
+    <section aria-label="System" className="platform-system">
+      <p className="muted">
+        Environment <strong>{h.environment}</strong>{h.release ? <> · release <strong>{h.release}</strong></> : null}
+        {" "}<button type="button" className="btn btn-sm" onClick={() => health.reload()}>Refresh</button>
+      </p>
+      <ul className="platform-checks">
+        {checks.map(([label, okay]) => (
+          <li key={label} className={okay ? "ok" : "bad"}>{label}: {okay ? "OK" : label === "Database" || label === "Redis" ? "Unavailable" : "Not set up"}</li>
+        ))}
+      </ul>
+      <h2>Background jobs</h2>
+      <div className="table-wrap"><table className="table">
+        <thead><tr><th>Job</th><th>Status</th><th>Last run</th><th>Last success</th><th>Problem</th></tr></thead>
+        <tbody>
+          {h.jobs.map((j) => (
+            <tr key={j.name}>
+              <td>{j.name}</td>
+              <td><span className={`badge badge-${j.status === "ok" ? "ok" : j.status === "never_ran" ? "warn" : "bad"}`}>{JOB_STATUS_LABEL[j.status]}</span></td>
+              <td>{when(j.last_run_at)}</td>
+              <td>{when(j.last_ok_at)}</td>
+              <td>{j.error ?? ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table></div>
+      <h2>Providers</h2>
+      <div className="table-wrap"><table className="table">
+        <thead><tr><th>Provider</th><th>Needed for</th><th>Credentials</th></tr></thead>
+        <tbody>
+          {h.providers.map((p) => (
+            <tr key={p.key}>
+              <td>{p.name}</td>
+              <td>{p.needed_for}</td>
+              <td><span className={`badge badge-${p.configured ? "ok" : "warn"}`}>{p.configured ? "Configured" : "Missing"}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table></div>
+    </section>
   );
 }

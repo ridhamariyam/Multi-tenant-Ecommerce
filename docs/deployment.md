@@ -125,18 +125,24 @@ Migrations are written to be additive (new tables/columns, backfills). Never run
 
 ## Monitoring
 
-What exists today:
-
-- Health checks on every service (`docker compose ps`); `restart: unless-stopped`
-  brings crashed services back.
-- `GET https://api.<root>/health/ready` (checks the database and Redis) — point an
-  uptime monitor (UptimeRobot, Better Stack, …) at it and at a storefront URL.
-- Structured logs: Caddy access logs and the scheduler/backup lines are JSON
-  (`docker compose logs -f scheduler | grep '"status": "failed"'`).
-
-Not yet built (see `docs/technical-audit.md`): error reporting (Sentry), metrics,
-disk-usage alerts. Until then, at least alert on disk space from the host
-(e.g. a cron `df` check) since Postgres, MinIO and backups share the disk.
+- **Health:** every service has a Docker health check (`docker compose ps`) and
+  `restart: unless-stopped`. Point an uptime monitor (UptimeRobot, Better Stack, …)
+  at `https://api.<root>/health/ready` (database + Redis) and at one storefront URL.
+- **Logs:** the API, scheduler, backup job and Caddy write one JSON object per
+  line; API lines carry `request_id` (also returned to clients as `X-Request-Id`),
+  `path`, `status`, `duration_ms` and `host`. Server errors in the storefront and
+  console are JSON lines with `"logger": "next"`.
+  `docker compose logs -f api | grep '"level": "error"'`
+- **Errors:** set `SENTRY_DSN` (sentry.io, or self-hosted Sentry/GlitchTip) and
+  unhandled API and job errors are reported with their request id and release
+  (`CLIQ_VERSION`). Cookies, auth headers, cart tokens and request bodies are
+  never sent.
+- **Alerts:** set `ALERT_WEBHOOK_URL` to a Slack, Discord or Google Chat incoming
+  webhook. A failing background job, or less than `DISK_ALERT_FREE_PERCENT` disk
+  free, posts one message per problem per hour.
+- **Operator view:** `https://app.<root>/admin/platform` → **System** shows the
+  database and Redis, each background job's last run and last success, and
+  which provider credentials are still missing.
 
 ## Rehearse locally
 

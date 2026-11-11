@@ -3,6 +3,8 @@ and an audit trail in the affected brand's own activity log."""
 
 from __future__ import annotations
 
+import json
+
 import dns.exception
 import pytest
 from sqlalchemy import select
@@ -148,3 +150,19 @@ async def test_overview_counts_without_business_data(platform, make_merchant, br
     assert set(data) == {
         "brands_total", "brands_active", "brands_suspended", "stores_published", "domains_pending", "merchant_accounts",
     }
+
+
+async def test_operators_see_system_health_and_missing_providers(platform, make_merchant, brand_a):
+    admin = await make_merchant("ops@cliq.example.com", platform_admin=True)
+
+    response = await platform.get(f"{ADMIN}/system", headers=admin.headers)
+    owner = await platform.get(f"{ADMIN}/system", headers=brand_a.owner.headers)
+
+    assert owner.status_code == 403
+    body = response.json()["data"]
+    assert response.status_code == 200
+    assert body["database"] is True and body["redis"] is True
+    assert {j["name"] for j in body["jobs"]} >= {"order-sheets", "expire-orders"}
+    providers = {p["key"]: p for p in body["providers"]}
+    assert "razorpay" in providers and "smtp" in providers
+    assert all("secret" not in json.dumps(p).lower() for p in body["providers"])

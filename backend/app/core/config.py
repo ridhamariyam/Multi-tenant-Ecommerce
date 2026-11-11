@@ -216,6 +216,21 @@ class Settings(BaseSettings):
     seed_admin_email: str | None = None
     seed_admin_password: str | None = None
 
+    # Observability. LOG_FORMAT: "json" (one object per line, for a log
+    # collector) or "text"; unset = json outside development/test.
+    log_format: Literal["json", "text"] | None = None
+    log_level: str = "INFO"
+    # Error reporting: errors go to Sentry when a DSN is set (sentry-sdk is in
+    # requirements.txt). Unset = errors are only logged.
+    sentry_dsn: str | None = Field(default=None, repr=False)
+    sentry_traces_sample_rate: float = Field(default=0.0, ge=0, le=1)
+    # The release tag sent with errors (docker-compose.prod.yml passes CLIQ_VERSION).
+    release: str | None = Field(default=None, validation_alias="CLIQ_VERSION")
+    # Alerts: a Slack/Discord/Google Chat compatible incoming-webhook URL that
+    # receives a message when a background job fails. Unset = no alerts.
+    alert_webhook_url: str | None = Field(default=None, repr=False)
+    alert_repeat_seconds: int = Field(default=3600, ge=60)
+
     razorpay_key_id: str | None = None
     razorpay_key_secret: str | None = None
     razorpay_webhook_secret: str | None = None
@@ -244,6 +259,12 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() in {"production", "prod"}
+
+    @property
+    def json_logs(self) -> bool:
+        if self.log_format is not None:
+            return self.log_format == "json"
+        return self.environment.lower() not in {"development", "test", "testing"}
 
     @property
     def api_docs_enabled(self) -> bool:

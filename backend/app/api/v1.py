@@ -8,6 +8,7 @@ from app.addresses import router as addresses
 from app.audit import router as audit
 from app.auth import router as auth
 from app.brands import platform as brands_platform
+from app.brands import platform_system
 from app.brands import router as brands
 from app.cart import router as cart
 from app.catalogue import router as catalogue
@@ -42,6 +43,7 @@ for router in (
     merchants.router,
     brands.router,
     brands_platform.router,
+    platform_system.router,
     stores.router,
     stores_storefront.router,
     virtual_models.router,

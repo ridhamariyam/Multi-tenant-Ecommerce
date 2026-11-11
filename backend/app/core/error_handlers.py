@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Request, status
@@ -10,8 +11,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.error_codes import AuthErrorCode, CommonErrorCode, ErrorCode
 from app.core.exceptions import AppError, RateLimitedError
+from app.core.observability import capture_exception
 from app.core.request_context import get_request_id
 from app.core.responses import ErrorPayload, ErrorResponse
+
+logger = logging.getLogger(__name__)
 
 _STATUS_ERROR_CODES: dict[int, ErrorCode] = {
     status.HTTP_401_UNAUTHORIZED: AuthErrorCode.AUTHENTICATION_FAILED,
@@ -110,6 +114,7 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
 
 async def database_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
     """Lost or refused database connections. Never echoes the driver's message."""
+    logger.error("database unavailable on %s %s: %s", request.method, request.url.path, type(exc).__name__)
     return _json(
         status.HTTP_503_SERVICE_UNAVAILABLE,
         _envelope(
@@ -121,6 +126,10 @@ async def database_unavailable_handler(request: Request, exc: Exception) -> JSON
 
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Last resort: a generic 500 that reveals nothing internal to the caller."""
+    logger.error(
+        "unhandled error on %s %s", request.method, request.url.path, exc_info=exc
+    )
+    capture_exception(exc)
     return _json(
         status.HTTP_500_INTERNAL_SERVER_ERROR,
         _envelope(

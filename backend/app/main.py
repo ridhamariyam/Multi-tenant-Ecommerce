@@ -1,4 +1,5 @@
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,11 +14,15 @@ from app.core.cache import close_redis, redis_healthy
 from app.core.config import get_settings
 from app.core.database import dispose_engine, engine
 from app.core.error_handlers import register_exception_handlers
+from app.core.observability import configure_logging, init_error_reporting
 from app.core.request_context import sanitize_request_id, set_request_id
 from app.core.storage import get_storage
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+request_log = logging.getLogger("app.request")
+
+_QUIET_PATHS = ("/health",)
 
 
 @asynccontextmanager
@@ -35,6 +40,13 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    configure_logging(json_logs=settings.json_logs, level=settings.log_level)
+    init_error_reporting(
+        dsn=settings.sentry_dsn,
+        environment=settings.environment,
+        release=settings.release,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+    )
     app = FastAPI(
         title=settings.app_name,
         version="1.0.0",
@@ -60,7 +72,26 @@ def create_app() -> FastAPI:
         set_request_id(request_id)
         request.state.request_id = request_id
 
-        response = await call_next(request)
+        started = time.perf_counter()
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+        finally:
+            path = request.url.path
+            fields = {
+                "method": request.method,
+                "path": path,
+                "status": status_code,
+                "duration_ms": round((time.perf_counter() - started) * 1000, 1),
+                "host": request.headers.get("x-forwarded-host") or request.headers.get("host"),
+            }
+            if status_code >= 500:
+                request_log.error("request", extra=fields)
+            elif path.startswith(_QUIET_PATHS):
+                request_log.debug("request", extra=fields)
+            else:
+                request_log.info("request", extra=fields)
         response.headers["X-Request-Id"] = request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         if request.url.path.startswith(settings.storage_public_base_url):

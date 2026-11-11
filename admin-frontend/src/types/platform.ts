@@ -121,3 +121,30 @@ export interface PlatformOverview {
   domains_pending: number;
   merchant_accounts: number;
 }
+
+export interface JobHealth {
+  name: string;
+  status: "ok" | "failed" | "stale" | "never_ran";
+  last_run_at: string | null;
+  last_ok_at: string | null;
+  every_seconds: number;
+  error: string | null;
+}
+
+export interface ProviderStatus {
+  key: string;
+  name: string;
+  configured: boolean;
+  needed_for: string;
+}
+
+export interface SystemHealth {
+  environment: string;
+  release: string | null;
+  database: boolean;
+  redis: boolean;
+  error_reporting: boolean;
+  alerts: boolean;
+  jobs: JobHealth[];
+  providers: ProviderStatus[];
+}

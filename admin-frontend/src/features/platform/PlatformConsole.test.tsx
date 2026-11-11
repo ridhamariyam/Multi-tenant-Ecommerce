@@ -102,4 +102,33 @@ describe("platform console", () => {
     expect(within(row).getByText("cliq-verify=wrong")).toBeInTheDocument();
     expect(within(row).getByText("Pending")).toBeInTheDocument();
   });
+
+  it("shows background jobs and which providers still need credentials", async () => {
+    mockFetch(
+      route("GET", "/platform/auth/me", () => ok(account(true))),
+      route("GET", "/platform/admin/overview", () => ok(OVERVIEW)),
+      route("GET", "/platform/admin/brands", () => pageOf([brandRow()])),
+      route("GET", "/platform/admin/system", () => ok({
+        environment: "production", release: "7", database: true, redis: true, error_reporting: false, alerts: true,
+        jobs: [
+          { name: "order-sheets", status: "ok", last_run_at: "2026-11-11T10:00:00Z", last_ok_at: "2026-11-11T10:00:00Z", every_seconds: 60, error: null },
+          { name: "shipment-sync", status: "failed", last_run_at: "2026-11-11T10:00:00Z", last_ok_at: null, every_seconds: 900, error: "timed out" },
+        ],
+        providers: [
+          { key: "razorpay", name: "Razorpay payments", configured: true, needed_for: "Online payments and refunds" },
+          { key: "smtp", name: "Email (SMTP)", configured: false, needed_for: "Password resets" },
+        ],
+      })),
+    );
+    renderAt("/platform");
+
+    await userEvent.click(await screen.findByRole("tab", { name: "System" }));
+
+    const failed = (await screen.findByText("shipment-sync")).closest("tr")!;
+    expect(within(failed).getByText("Failed")).toBeInTheDocument();
+    expect(within(failed).getByText("timed out")).toBeInTheDocument();
+    const smtp = screen.getByText("Email (SMTP)").closest("tr")!;
+    expect(within(smtp).getByText("Missing")).toBeInTheDocument();
+    expect(screen.getByText("Error reporting: Not set up")).toBeInTheDocument();
+  });
 });

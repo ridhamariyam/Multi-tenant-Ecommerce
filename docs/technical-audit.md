@@ -185,7 +185,7 @@ checks, builds and an update to this table.
 | 3 | Merchant console UI: sign up / sign in, brand list + switch, create brand, store settings, publish, domains, members — on the existing platform API | **Done** (2026-11-11) — see §7 |
 | 4 | Platform admin UI: brands, suspend/activate, verify domains | **Done** (2026-11-11) — see §7 |
 | 5 | Production deployment: storefront + admin Dockerfiles, reverse proxy with wildcard TLS, migrate-on-deploy, backup schedule + restore drill, env templates for staging/prod | **Written, partly verified** (2026-11-11) — full-stack rehearsal blocked by disk space; see §7 |
-| 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | Planned |
+| 6 | Observability: structured JSON logs, error reporting hook (Sentry DSN optional), job health | **Done** (2026-11-11) — see §7 |
 | 7 | E2E (Playwright): guest purchase, admin order handling, two-brand isolation | Planned |
 | 8 | Subscriptions API + plan limits enforced server-side; billing provider integration | Planned (billing provider BLOCKED until chosen) |
 | 9 | Merchant password reset + email provider adapter (transactional email) | Planned (provider BLOCKED until chosen) |
@@ -344,3 +344,14 @@ Verified:
 behind Caddy. The build ran out of disk (the machine had 0 MB free; ~0.9 GB after
 clearing Docker's build cache). Needs ~4 GB free, or a server. Nothing has been run on
 a public server with real DNS or Let's Encrypt.
+
+### Step 6 — Observability (2026-11-11)
+
+- `app/core/observability.py`: JSON log formatter (request id + extra fields), uvicorn logs routed through it, one `app.request` line per request (health checks at debug); optional Sentry (`SENTRY_DSN`, scrubs cookies/auth/cart-token headers and bodies); `send_alert()` to a Slack/Discord/Google Chat webhook, throttled per problem with Redis.
+- Unhandled API errors are now logged with traceback + request id (they were silently turned into 500s before) and reported to Sentry.
+- Scheduler records each job's last outcome in Redis (`cliq:jobs`), alerts on failure, and has a new `disk-space` job (alerts under `DISK_ALERT_FREE_PERCENT`).
+- `GET /platform/admin/system` + **System** tab in the operator console: database, Redis, jobs (ok / failed / not running / never ran), provider credentials configured or missing.
+- Storefront and console: `instrumentation.ts` logs server render errors as JSON.
+- Tests: `tests/core/test_observability.py` (10), system-health API test, console test. Verified live: API with `LOG_FORMAT=json` against the dev database writes JSON request lines with the caller's request id.
+- Not verified: Sentry delivery (no DSN) and a real webhook (none given) — both covered by unit tests with fakes only.
+
