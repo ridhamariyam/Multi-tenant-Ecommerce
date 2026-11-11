@@ -22,7 +22,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Which payment methods do you accept?',
-    a: 'We accept UPI, credit and debit cards, net banking, wallets and cash on delivery.',
+    a: 'We accept UPI, credit and debit cards, net banking and cash on delivery. Guest orders are cash on delivery; sign in to pay online.',
   },
   {
     q: 'Can I change or cancel my order?',
@@ -30,7 +30,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How do I track my order?',
-    a: 'Once your order ships, you can follow its progress from My Orders in your account.',
+    a: 'Use Track Order (link in the footer) with your order number and phone number, or see My Orders in your account.',
   },
 ];
 

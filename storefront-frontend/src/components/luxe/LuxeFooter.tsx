@@ -9,7 +9,7 @@ const SHOP_LINKS = [
   { label: 'Collections', href: '/products' },
   { label: 'Best Sellers', href: '/products' },
   { label: 'Wishlist', href: '/wishlist' },
-  { label: 'Track Order', href: '/account/orders' },
+  { label: 'Track Order', href: '/track-order' },
 ];
 
 const ABOUT_LINKS = [
@@ -21,7 +21,7 @@ const ABOUT_LINKS = [
 ];
 
 /** Payment options the storefront checkout already offers. */
-const PAYMENTS = ['UPI', 'Cards', 'Net Banking', 'Wallets', 'Cash on Delivery'];
+const PAYMENTS = ['UPI', 'Cards', 'Net Banking', 'Cash on Delivery'];
 
 /**
  * The home page's footer: a concise contact note above the existing link

@@ -14,10 +14,10 @@ import { SIGN_IN_PARAM } from '@/lib/auth/sign-in-url';
 /**
  * Routes that need a signed-in customer.
  *
- * /cart is deliberately absent: guests keep a cookie-backed cart that
- * is merged after sign-in, so they have to be able to see it.
+ * /cart and /checkout are deliberately absent: guests keep a cookie-backed
+ * cart (merged after sign-in) and can check out without an account.
  */
-const CUSTOMER_PREFIXES = ['/account', '/checkout', '/order-confirmation'];
+const CUSTOMER_PREFIXES = ['/account', '/order-confirmation'];
 
 function matches(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));

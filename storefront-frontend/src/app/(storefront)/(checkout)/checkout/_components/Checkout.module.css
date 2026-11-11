@@ -1524,3 +1524,22 @@
     white-space: nowrap;
   }
 }
+
+/* Guest checkout: the contact and address forms sit inside a card. */
+.guestCard {
+  padding: 20px;
+}
+
+.guestNote {
+  padding: 12px 20px 16px;
+  font-size: 13px;
+  color: #8a8580;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .guestCard {
+    padding: 16px;
+    grid-template-columns: 1fr;
+  }
+}

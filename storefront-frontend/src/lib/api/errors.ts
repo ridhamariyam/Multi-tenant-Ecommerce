@@ -53,7 +53,8 @@ export class ApiError extends Error {
 
     for (const detail of this.details) {
       if (detail.field && !(detail.field in errors)) {
-        errors[detail.field] = detail.message;
+        // Pydantic prefixes custom validator messages with "Value error, ".
+        errors[detail.field] = detail.message.replace(/^Value error,\s*/i, '');
       }
     }
 

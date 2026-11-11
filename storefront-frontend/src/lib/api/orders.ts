@@ -68,6 +68,74 @@ export const checkoutApi = {
   },
 };
 
+/** A guest's delivery address, typed in at checkout rather than saved. */
+export interface GuestAddressInput {
+  full_name: string;
+  phone: string;
+  address_line_1: string;
+  address_line_2?: string | null;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+}
+
+export interface GuestContactInput {
+  name: string;
+  phone: string;
+  email?: string | null;
+}
+
+/**
+ * Checkout without an account. The backend prices and orders the guest cart
+ * named by the cart token, and links the order to a customer record by
+ * phone, so signing in later with that phone shows it. Guests pay cash on
+ * delivery; online payment needs an account.
+ */
+export const guestCheckoutApi = {
+  preview(
+    cartToken: string,
+    input: { address?: GuestAddressInput | null; pincode?: string | null; couponCode?: string | null },
+  ): Promise<CheckoutPreview> {
+    return apiRequest<CheckoutPreview>('/checkout/guest/preview', {
+      method: 'POST',
+      body: {
+        ...(input.address ? { address: input.address } : {}),
+        ...(!input.address && input.pincode ? { pincode: input.pincode } : {}),
+        coupon_code: input.couponCode || null,
+        payment_method: 'CASH_ON_DELIVERY',
+      },
+      headers: { 'X-Cart-Token': cartToken },
+      cache: 'no-store',
+    });
+  },
+
+  placeOrder(
+    cartToken: string,
+    input: { contact: GuestContactInput; address: GuestAddressInput; couponCode?: string | null; idempotencyKey: string },
+  ): Promise<Order> {
+    return apiRequest<Order>('/checkout/guest', {
+      method: 'POST',
+      body: {
+        contact: input.contact,
+        address: input.address,
+        coupon_code: input.couponCode || null,
+        payment_method: 'CASH_ON_DELIVERY',
+      },
+      headers: { 'X-Cart-Token': cartToken, 'Idempotency-Key': input.idempotencyKey },
+      cache: 'no-store',
+    });
+  },
+
+  /** Public lookup: the order number plus the phone it was placed with. */
+  track(orderNumber: string, phone: string): Promise<OrderTracking> {
+    return apiRequest<OrderTracking>('/storefront/orders/track', {
+      query: { order_number: orderNumber, phone },
+      cache: 'no-store',
+    });
+  },
+};
+
 export const orderApi = {
   list(token: string, params: PageParams = {}): Promise<Page<OrderSummary>> {
     return apiRequestPage<OrderSummary>('/orders', {

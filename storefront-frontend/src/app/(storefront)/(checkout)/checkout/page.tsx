@@ -4,25 +4,29 @@ import { getAccessToken } from '@/lib/auth/session';
 import type { Address } from '@/types/addresses';
 import type { Offer } from '@/types/orders';
 import Checkout from './_components/Checkout';
+import GuestCheckout from './_components/GuestCheckout';
 
 /**
  * Price the cart and load saved addresses before the form renders.
  *
- * Middleware already turns guests away (`/checkout` requires a session), so
- * a missing token here only means a backend hiccup -- the page degrades to
- * an empty address list and no preview rather than crashing, and the form
- * itself surfaces the real error on the next action it tries.
+ * Signed-out shoppers get guest checkout (cash on delivery). For a signed-in
+ * customer a failed call degrades to an empty address list and no preview
+ * rather than crashing, and the form surfaces the real error on its next action.
  */
 export default async function CheckoutPageRoute() {
   const token = await getAccessToken();
 
-  const [addresses, preview, offers] = token
-    ? await Promise.all([
-        addressApi.list(token).catch((): Address[] => []),
-        checkoutApi.preview(token).catch(() => null),
-        couponApi.listOffers().catch((): Offer[] => []),
-      ])
-    : [[] as Address[], null, [] as Offer[]];
+  // Guests check out without an account (cash on delivery).
+  if (!token) {
+    const offers = await couponApi.listOffers().catch((): Offer[] => []);
+    return <GuestCheckout availableOffers={offers} />;
+  }
+
+  const [addresses, preview, offers] = await Promise.all([
+    addressApi.list(token).catch((): Address[] => []),
+    checkoutApi.preview(token).catch(() => null),
+    couponApi.listOffers().catch((): Offer[] => []),
+  ]);
 
   return <Checkout initialAddresses={addresses} initialPreview={preview} availableOffers={offers} />;
 }

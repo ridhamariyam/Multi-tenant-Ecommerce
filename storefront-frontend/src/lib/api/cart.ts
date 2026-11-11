@@ -2,8 +2,7 @@ import { apiRequest } from '@/lib/api/client';
 import type { Cart, Wishlist } from '@/types/cart';
 
 /**
- * Cart and wishlist both require a signed-in customer -- the backend has no
- * guest cart. Every cart mutation answers with the whole cart, so callers
+ * The signed-in customer's cart and wishlist. Every cart mutation answers with the whole cart, so callers
  * should replace their state with the result rather than patching it.
  */
 export const cartApi = {
@@ -41,6 +40,37 @@ export const cartApi = {
 
   clear(token: string): Promise<Cart> {
     return apiRequest<Cart>('/cart', { method: 'DELETE', token, cache: 'no-store' });
+  },
+};
+
+/**
+ * The backend's guest cart, used only to check a guest out: the storefront
+ * keeps a guest's cart in its own cookie and copies it here at checkout,
+ * because guest checkout prices and orders whatever this cart holds.
+ */
+const CART_TOKEN_HEADER = 'X-Cart-Token';
+
+export const guestCartApi = {
+  /** Answers with `guest_token`, the only time it is returned. */
+  create(): Promise<Cart & { guest_token?: string | null }> {
+    return apiRequest<Cart & { guest_token?: string | null }>('/cart/guest', { method: 'POST', cache: 'no-store' });
+  },
+
+  get(cartToken: string): Promise<Cart> {
+    return apiRequest<Cart>('/cart', { headers: { [CART_TOKEN_HEADER]: cartToken }, cache: 'no-store' });
+  },
+
+  addItem(cartToken: string, variantId: string, quantity: number): Promise<Cart> {
+    return apiRequest<Cart>('/cart/items', {
+      method: 'POST',
+      body: { variant_id: variantId, quantity },
+      headers: { [CART_TOKEN_HEADER]: cartToken },
+      cache: 'no-store',
+    });
+  },
+
+  clear(cartToken: string): Promise<Cart> {
+    return apiRequest<Cart>('/cart', { method: 'DELETE', headers: { [CART_TOKEN_HEADER]: cartToken }, cache: 'no-store' });
   },
 };
 
