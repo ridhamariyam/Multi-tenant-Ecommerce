@@ -7,6 +7,7 @@ import { catalogueApi } from '@/lib/api/catalogue';
 import { searchApi } from '@/lib/api/search';
 import { categorySlug } from '@/lib/catalogue/slug';
 import { sizeLabel } from '@/lib/catalogue/size';
+import { DEFAULT_OG_IMAGE, plainText } from '@/lib/seo';
 import type { CategoryStorefront, ProductSort, ProductSummaryStorefront } from '@/types/catalogue';
 
 import homeStyles from '../../../(home)/home/_components/luxe/Home.module.css';
@@ -51,14 +52,26 @@ async function findCategory(slug: string): Promise<CategoryStorefront | undefine
 
 /** Page metadata for the collection with this slug. */
 export async function collectionMetadata(slug: string): Promise<Metadata> {
+  // Filtered and sorted views share the collection's canonical URL, so they
+  // are not indexed as duplicates of it.
   if (slug === PRODUCTS_COLLECTION_SLUG) {
-    return { title: 'Shop | CliQ.', description: 'Shop every CliQ collection.' };
+    const description = 'Shop every CliQ. collection: streetwear, sneakers and accessories.';
+    return {
+      title: 'Shop',
+      description,
+      alternates: { canonical: '/products' },
+      openGraph: { title: 'Shop', description, url: '/products', images: [DEFAULT_OG_IMAGE] },
+    };
   }
   const category = await findCategory(slug).catch(() => undefined);
-  if (!category) return { title: 'Collection | CliQ.' };
+  if (!category) return { title: 'Collection' };
+  const description = plainText(category.description) || `Shop the CliQ. ${category.name} collection.`;
+  const path = collectionPath(slug);
   return {
-    title: `${category.name} | CliQ.`,
-    description: category.description ?? `Shop the CliQ ${category.name} collection.`,
+    title: category.name,
+    description,
+    alternates: { canonical: path },
+    openGraph: { title: category.name, description, url: path, images: [DEFAULT_OG_IMAGE] },
   };
 }
 

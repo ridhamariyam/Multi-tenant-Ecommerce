@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 
+import { NO_INDEX } from '@/lib/seo';
+
 import styles from '../Info.module.css';
 import TrackOrderForm from './TrackOrderForm';
 
 export const metadata: Metadata = {
-  title: 'Track your order | CliQ.',
+  title: 'Track your order',
   description: 'Follow your CliQ. order with its order number and the phone number you ordered with.',
-  robots: { index: false },
+  robots: NO_INDEX,
 };
 
 /** Public order tracking, so guests (and anyone signed out) can follow an order. */

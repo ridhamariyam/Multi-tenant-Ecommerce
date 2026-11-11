@@ -9,7 +9,7 @@ import { EMPTY_WISHLIST, getWishlist } from '@/lib/wishlist/read';
 import type { Cart } from '@/types/cart';
 
 export const metadata = {
-  title: 'Page Not Found | CliQ.',
+  title: 'Page not found',
   description: "The page you're looking for doesn't exist or may have been moved.",
 };
 

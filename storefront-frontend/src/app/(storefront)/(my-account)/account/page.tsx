@@ -9,7 +9,7 @@ import { signInUrl } from '@/lib/auth/sign-in-url';
 import MyProfile from './_components/MyProfile';
 
 export const metadata = {
-  title: 'My Profile | CliQ.',
+  title: 'My Profile',
   description: 'Manage your CliQ profile and saved addresses.',
 };
 

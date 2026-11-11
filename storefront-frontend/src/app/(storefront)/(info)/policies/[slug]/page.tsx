@@ -85,8 +85,9 @@ function find(slug: string): Policy | undefined {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const policy = find((await params).slug);
-  return policy ? { title: `${policy.title} | CliQ.`, description: policy.lead } : {};
+  const { slug } = await params;
+  const policy = find(slug);
+  return policy ? { title: policy.title, description: policy.lead, alternates: { canonical: `/policies/${slug}` } } : {};
 }
 
 export default async function PolicyPage({ params }: Props) {

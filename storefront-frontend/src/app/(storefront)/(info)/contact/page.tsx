@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import styles from '../Info.module.css';
 
 export const metadata: Metadata = {
-  title: 'Contact | CliQ.',
+  title: 'Contact',
+  alternates: { canonical: '/contact' },
   description: 'Reach the CliQ studio for help with orders, sizing, returns and anything else.',
 };
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { NO_INDEX } from '@/lib/seo';
 
 import ProductCard from '@/elements/Shop/ProductCard';
 import { catalogueApi } from '@/lib/api/catalogue';
@@ -14,7 +15,8 @@ import SearchForm from './SearchForm';
 const PAGE_SIZE = 24;
 
 export const metadata: Metadata = {
-  title: 'Search | CliQ.',
+  title: 'Search',
+  robots: NO_INDEX,
   description: 'Search CliQ products by name, category, brand, or keyword.',
 };
 

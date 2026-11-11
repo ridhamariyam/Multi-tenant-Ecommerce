@@ -1,14 +1,26 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+import { siteUrl } from '@/lib/seo';
 
-export default function robots(): MetadataRoute.Robots {
+/** Per brand: the sitemap lives on whichever domain this request came in on. */
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const base = await siteUrl();
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/account', '/cart', '/checkout', '/order-confirmation'],
+      disallow: [
+        '/account',
+        '/cart',
+        '/checkout',
+        '/order-confirmation',
+        '/track-order',
+        '/search-result',
+        '/wishlist',
+        '/api/',
+        '/*?signin=',
+      ],
     },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${base}/sitemap.xml`,
   };
 }

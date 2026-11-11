@@ -13,6 +13,8 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { categorySlug } from '@/lib/catalogue/slug';
 import type { ProductStorefront } from '@/types/catalogue';
 
+import { ProductJsonLd } from './productSeo';
+
 import homeStyles from '@/app/(storefront)/(home)/home/_components/luxe/Home.module.css';
 import styles from '@/elements/SingleProductPage/luxe/ProductDetails.module.css';
 
@@ -69,6 +71,7 @@ const SingleProductPage = async ({
 
   return (
     <div className={homeStyles.page}>
+      <ProductJsonLd product={product} summary={summary} />
       <div className={homeStyles.container}>
         <nav className={styles.crumb} aria-label="Breadcrumb">
           <Link href="/">Home</Link>

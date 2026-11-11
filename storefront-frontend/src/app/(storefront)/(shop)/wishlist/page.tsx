@@ -2,11 +2,13 @@ import MobileBottomNav from '@/components/luxe/MobileBottomNav';
 import { catalogueApi } from '@/lib/api/catalogue';
 import { EMPTY_WISHLIST, getWishlist } from '@/lib/wishlist/read';
 import type { ProductSummaryStorefront } from '@/types/catalogue';
+import { NO_INDEX } from '@/lib/seo';
 
 import ShopWishList, { type WishlistProductCardData } from './_components/ShopWishList';
 
 export const metadata = {
-  title: 'Wishlist | CliQ.',
+  title: 'Wishlist',
+  robots: NO_INDEX,
   description: 'Everything you have saved to your CliQ wishlist.',
 };
 
