@@ -59,9 +59,29 @@ http://:{$PORT} {
 		max_size 25MB
 	}
 
-	@media path /{$S3_BUCKET}/*
-	handle @media {
+	# Object storage: only presigned POST uploads (to the bare bucket path) and
+	# reading single public objects. Bucket listing, pending/ uploads and S3
+	# sub-resources (?acl, ?list-type, ...) never reach MinIO, whose "download"
+	# policy would otherwise allow listing every brand's keys.
+	@media_upload {
+		path /{$S3_BUCKET}
+		method POST
+	}
+	handle @media_upload {
 		reverse_proxy {$MINIO_UPSTREAM}
+	}
+	@media_object {
+		path /{$S3_BUCKET}/*
+		method GET HEAD
+		not path /{$S3_BUCKET}/ /{$S3_BUCKET}/pending/*
+		expression {http.request.uri.query} == ''
+	}
+	handle @media_object {
+		reverse_proxy {$MINIO_UPSTREAM}
+	}
+	@media_other path /{$S3_BUCKET} /{$S3_BUCKET}/*
+	handle @media_other {
+		respond "Not found" 404
 	}
 
 	@api path /api/v1/payments/razorpay/webhook* /api/v1/billing/razorpay/webhook /api/v1/webhooks/fashn /api/v1/courier-webhooks/* /media/* /health /health/ready

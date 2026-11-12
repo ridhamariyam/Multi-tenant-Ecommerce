@@ -55,7 +55,28 @@ media.{$PLATFORM_ROOT_DOMAIN} {
 	request_body {
 		max_size 25MB
 	}
-	reverse_proxy minio:9000
+	# Only presigned POST uploads (bucket root) and single public objects.
+	# MinIO's "download" policy also allows listing the bucket, which would
+	# expose every brand's keys and pending uploads; that never reaches it.
+	@upload {
+		path_regexp ^/[^/]+/?$
+		method POST
+	}
+	@object {
+		path_regexp ^/[^/]+/.+
+		method GET HEAD
+		not path_regexp ^/[^/]+/pending/
+		expression {http.request.uri.query} == ''
+	}
+	handle @upload {
+		reverse_proxy minio:9000
+	}
+	handle @object {
+		reverse_proxy minio:9000
+	}
+	handle {
+		respond "Not found" 404
+	}
 }
 
 {$PLATFORM_ROOT_DOMAIN} {

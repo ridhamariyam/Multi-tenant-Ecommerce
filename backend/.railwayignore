@@ -1,0 +1,11 @@
+# Never upload to Railway: secrets, backups, local tooling.
+var/
+.venv/
+venv/
+.env
+.env.*
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+*.log
