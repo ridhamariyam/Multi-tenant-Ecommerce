@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 
 from app.core.cache import get_redis
+from app.core.config import get_settings
 from app.core.exceptions import RateLimitedError
 
 KEY_PREFIX = "ratelimit"
@@ -46,3 +47,15 @@ async def reset(key: str) -> None:
     except Exception:
         # Best effort: an unreset counter only expires at the end of its window.
         return
+
+
+async def enforce_guest_checkout(tenant_id: str, ip: str, subject: str) -> None:
+    """Guest checkout throttle: per shopper (``subject``), then per IP ceiling.
+
+    The per-IP counter is checked first so that minting new cart tokens never
+    escapes it; a shopper's own retries are bounded by the per-subject limit.
+    """
+    settings = get_settings()
+    window = settings.commerce_rate_limit_window_seconds
+    await enforce("guest-checkout-ip", tenant_id, ip, limit=settings.guest_checkout_ip_rate_limit_attempts, window_seconds=window)
+    await enforce("guest-checkout", tenant_id, ip, subject, limit=settings.guest_checkout_rate_limit_attempts, window_seconds=window)

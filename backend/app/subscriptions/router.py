@@ -126,9 +126,11 @@ async def cancel(tenant: CurrentTenant, user: BrandManager, session: AsyncSessio
 async def webhook(
     request: Request,
     signature: str | None = Header(default=None, alias="X-Razorpay-Signature"),
+    event_id: str | None = Header(default=None, alias="X-Razorpay-Event-Id"),
     session: AsyncSession = Depends(get_db),
 ):
-    return ok({"result": await billing.handle_webhook(session, await request.body(), signature)}, message="Webhook received")
+    result = await billing.handle_webhook(session, await request.body(), signature, event_id)
+    return ok({"result": result}, message="Webhook received")
 
 
 # ------------------------------------------------------------ platform operators

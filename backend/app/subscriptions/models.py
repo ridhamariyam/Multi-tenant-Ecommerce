@@ -81,3 +81,30 @@ class BrandSubscription(IdMixin, TenantMixin, TimestampMixin, Base):
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     trial_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     past_due_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Razorpay's created_at of the newest webhook event applied to this row.
+    # Older events are rejected so a delayed retry cannot undo newer state.
+    provider_event_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BillingWebhookEvent(IdMixin, Base):
+    """Every signed Razorpay billing webhook received, with what was done.
+
+    The unique event id makes retries idempotent; ``outcome``/``reason``
+    explain events that were ignored or rejected.
+    """
+
+    __tablename__ = "billing_webhook_events"
+
+    __table_args__ = (
+        UniqueConstraint("provider_event_id", name="uq_billing_webhook_events_provider_event_id"),
+        Index("ix_billing_webhook_events_subscription", "external_subscription_id"),
+    )
+
+    provider_event_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    event: Mapped[str] = mapped_column(String(60), nullable=False)
+    external_subscription_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    event_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outcome: Mapped[str] = mapped_column(String(12), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=text("now()"))

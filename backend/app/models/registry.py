@@ -52,7 +52,7 @@ from app.returns.models import ReturnReason
 from app.search_filter.models import SearchHistory
 from app.shipments.models import Shipment, ShipmentEvent, ShippingProviderSettings
 from app.stores.models import Store
-from app.subscriptions.models import BrandSubscription, SubscriptionPlan
+from app.subscriptions.models import BillingWebhookEvent, BrandSubscription, SubscriptionPlan
 from app.tenants.models import Tenant, TenantDomain
 from app.users.models import User, UserIdentity
 from app.virtual_models.models import VirtualModel, VirtualModelPose
@@ -61,6 +61,7 @@ from app.wishlist.models import Wishlist, WishlistItem
 __all__ = [
     "AiGenerationJob",
     "AiUsageLedger",
+    "BillingWebhookEvent",
     "BrandSubscription",
     "Look",
     "LookItem",

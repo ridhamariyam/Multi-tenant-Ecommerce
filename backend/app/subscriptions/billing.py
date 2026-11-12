@@ -18,7 +18,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -31,7 +32,7 @@ from app.core.exceptions import (
 )
 from app.payments import razorpay
 from app.subscriptions.constants import FALLBACK_PLAN, TRIAL_DAYS, SubscriptionStatus
-from app.subscriptions.models import BrandSubscription, SubscriptionPlan
+from app.subscriptions.models import BillingWebhookEvent, BrandSubscription, SubscriptionPlan
 from app.subscriptions.service import SubscriptionService, _add_month, grant_allowance, plan_by_code
 from app.tenants.models import Tenant
 
@@ -156,6 +157,8 @@ async def confirm_checkout(
     subscription.plan_id = plan.id
     subscription.pending_plan_id = None
     subscription.billing_provider = "razorpay"
+    if subscription.external_subscription_id != subscription_id:
+        subscription.provider_event_at = None  # ordering is per Razorpay subscription
     subscription.external_subscription_id = subscription_id
     subscription.cancel_at_period_end = False
     subscription.past_due_since = None
@@ -204,6 +207,7 @@ async def _downgrade(session: AsyncSession, subscription: BrandSubscription) -> 
     subscription.status = SubscriptionStatus.ACTIVE.value
     subscription.billing_provider = "manual"
     subscription.external_subscription_id = None
+    subscription.provider_event_at = None
     subscription.cancel_at_period_end = False
     subscription.past_due_since = None
     subscription.current_period_start = now
@@ -221,32 +225,101 @@ def webhook_signature_ok(raw_body: bytes, signature: str | None) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
-async def handle_webhook(session: AsyncSession, raw_body: bytes, signature: str | None) -> str:
+# Razorpay's own state of the subscription, as carried in the event payload.
+_TERMINAL_REMOTE_STATES = frozenset({"cancelled", "completed", "expired"})
+_ACTIVATING = ("subscription.activated", "subscription.charged", "subscription.resumed")
+_PAST_DUE = ("subscription.pending", "subscription.halted")
+_ENDING = ("subscription.cancelled", "subscription.completed")
+
+
+async def handle_webhook(
+    session: AsyncSession, raw_body: bytes, signature: str | None, event_id: str | None = None
+) -> str:
+    """Apply one signed subscription event; returns applied/ignored/rejected/duplicate.
+
+    State policy (F13): an event is applied only if it is newer than the last
+    event applied to that subscription (Razorpay's ``created_at``), belongs to
+    the same brand, and — for activating events — Razorpay itself does not
+    already report the subscription as ended. A cancelled subscription's id is
+    cleared, so any later event for it is ignored. Each event id is recorded
+    once, which makes retries no-ops; the outcome and reason are kept.
+    """
     if not webhook_signature_ok(raw_body, signature):
         raise AuthenticationError("Invalid webhook signature", error_code=PaymentErrorCode.INVALID_SIGNATURE)
     try:
         event = json.loads(raw_body)
     except ValueError as exc:
         raise ValidationError("Webhook body is not JSON") from exc
-    name = str(event.get("event", ""))
+    if not isinstance(event, dict):
+        raise ValidationError("Webhook body is not a JSON object")
+    name = str(event.get("event", ""))[:60]
     if not name.startswith("subscription."):
         return "ignored"
     entity = ((event.get("payload") or {}).get("subscription") or {}).get("entity") or {}
-    external_id = entity.get("id")
+    external_id = str(entity["id"])[:200] if entity.get("id") else None
+    created = event.get("created_at")
+    event_at = datetime.fromtimestamp(int(created), timezone.utc) if isinstance(created, (int, float)) else None
+    # Razorpay sends X-Razorpay-Event-Id; a retry repeats it. Without it, the
+    # signed body itself identifies the delivery.
+    provider_event_id = (event_id or "").strip()[:100] or "sha256:" + hashlib.sha256(raw_body).hexdigest()
+
+    recorded = await session.execute(
+        insert(BillingWebhookEvent)
+        .values(
+            id=uuid.uuid4(), provider_event_id=provider_event_id, event=name,
+            external_subscription_id=external_id, event_created_at=event_at, outcome="pending",
+        )
+        .on_conflict_do_nothing(constraint="uq_billing_webhook_events_provider_event_id")
+        .returning(BillingWebhookEvent.id)
+    )  # fmt: skip
+    row_id = recorded.scalar_one_or_none()
+    if row_id is None:
+        await session.rollback()
+        logger.info("billing webhook duplicate", extra={"event": name, "provider_event_id": provider_event_id})
+        return "duplicate"
+
+    async def finish(outcome: str, reason: str | None = None, tenant_id: uuid.UUID | None = None) -> str:
+        await session.execute(
+            update(BillingWebhookEvent)
+            .where(BillingWebhookEvent.id == row_id)
+            .values(outcome=outcome, reason=reason, tenant_id=tenant_id)
+        )
+        await session.commit()
+        if outcome == "rejected":
+            logger.warning(
+                "billing webhook rejected",
+                extra={"event": name, "reason": reason, "subscription": external_id, "tenant_id": str(tenant_id)},
+            )
+        return outcome
+
     if not external_id:
-        return "ignored"
+        return await finish("ignored", "no subscription id")
     subscription = await session.scalar(
         select(BrandSubscription).where(BrandSubscription.external_subscription_id == external_id).with_for_update()
     )
     if subscription is None:
-        return "ignored"  # e.g. a checkout that was never confirmed, or replaced
+        # Never confirmed, replaced by a plan switch, or already cancelled.
+        return await finish("ignored", "unknown, replaced or ended subscription")
+    tenant_id = subscription.tenant_id
+
+    noted_tenant = (entity.get("notes") or {}).get("tenant_id") if isinstance(entity.get("notes"), dict) else None
+    if noted_tenant is not None and str(noted_tenant) != str(tenant_id):
+        return await finish("rejected", "subscription notes name another brand", tenant_id)
+    if name not in _ACTIVATING + _PAST_DUE + _ENDING:
+        return await finish("ignored", "event not handled", tenant_id)
+    if event_at is not None and subscription.provider_event_at is not None and event_at < subscription.provider_event_at:
+        return await finish("rejected", "stale: older than the last applied event", tenant_id)
+    remote_status = str(entity.get("status") or "").lower()
+    if name in _ACTIVATING and remote_status in _TERMINAL_REMOTE_STATES:
+        return await finish("rejected", f"activation for a subscription Razorpay reports as {remote_status}", tenant_id)
+
     plan = await session.get(SubscriptionPlan, subscription.plan_id)
 
     def ts(key: str) -> datetime | None:
         value = entity.get(key)
         return datetime.fromtimestamp(int(value), timezone.utc) if value else None
 
-    if name in ("subscription.activated", "subscription.charged", "subscription.resumed"):
+    if name in _ACTIVATING:
         subscription.status = SubscriptionStatus.ACTIVE.value
         subscription.past_due_since = None
         start, end = ts("current_start"), ts("current_end")
@@ -254,17 +327,17 @@ async def handle_webhook(session: AsyncSession, raw_body: bytes, signature: str 
             subscription.current_period_start, subscription.current_period_end = start, end
         await session.flush()
         if plan is not None:
+            # Unique per plan and period: a retried charge grants nothing twice.
             await grant_allowance(session, subscription.tenant_id, plan, subscription.current_period_start)
-    elif name in ("subscription.pending", "subscription.halted"):
+    elif name in _PAST_DUE:
         if subscription.status != SubscriptionStatus.PAST_DUE.value:
             subscription.status = SubscriptionStatus.PAST_DUE.value
             subscription.past_due_since = datetime.now(timezone.utc)
-    elif name in ("subscription.cancelled", "subscription.completed"):
-        await _downgrade(session, subscription)
     else:
-        return "ignored"
-    await session.commit()
-    return "applied"
+        await _downgrade(session, subscription)
+    if event_at is not None:
+        subscription.provider_event_at = event_at
+    return await finish("applied", None, tenant_id)
 
 
 async def overview(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any]:

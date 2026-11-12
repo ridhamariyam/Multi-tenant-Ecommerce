@@ -115,7 +115,12 @@ class Settings(BaseSettings):
     review_rate_limit_attempts: int = 10
     search_rate_limit_attempts: int = 120
     guest_cart_rate_limit_attempts: int = 30
+    # Guest checkout is limited per shopper (brand + IP + guest cart, or the
+    # Razorpay order when confirming a payment) and, more loosely, per brand +
+    # IP so that many shoppers behind one carrier NAT do not block each other
+    # while one IP minting carts is still capped (F14).
     guest_checkout_rate_limit_attempts: int = 10
+    guest_checkout_ip_rate_limit_attempts: int = 60
     order_tracking_rate_limit_attempts: int = 20
     commerce_rate_limit_window_seconds: int = 60
 

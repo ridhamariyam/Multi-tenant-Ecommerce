@@ -96,14 +96,7 @@ async def verify_guest_razorpay_payment(
 ) -> ApiResponse[PaymentRead]:
     """No sign-in: the Razorpay signature (made with the brand's key secret)
     is what proves the payment, and only a guest order can be confirmed here."""
-    settings = get_settings()
-    await rate_limit.enforce(
-        "guest-checkout",
-        str(tenant.id),
-        client_ip(request),
-        limit=settings.guest_checkout_rate_limit_attempts,
-        window_seconds=settings.commerce_rate_limit_window_seconds,
-    )
+    await rate_limit.enforce_guest_checkout(str(tenant.id), client_ip(request), "rzp:" + data.razorpay_order_id)
     payment = await PaymentService(session, tenant.id).verify_guest_razorpay_payment(
         razorpay_order_id=data.razorpay_order_id,
         razorpay_payment_id=data.razorpay_payment_id,

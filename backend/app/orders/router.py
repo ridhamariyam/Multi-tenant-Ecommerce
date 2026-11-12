@@ -224,14 +224,7 @@ async def place_guest_order(
     ),
     session: AsyncSession = Depends(get_db),
 ) -> ApiResponse[OrderRead]:
-    settings = get_settings()
-    await rate_limit.enforce(
-        "guest-checkout",
-        str(tenant.id),
-        client_ip(request),
-        limit=settings.guest_checkout_rate_limit_attempts,
-        window_seconds=settings.commerce_rate_limit_window_seconds,
-    )
+    await rate_limit.enforce_guest_checkout(str(tenant.id), client_ip(request), "cart:" + cart_token)
 
     order = await CheckoutService(session, tenant.id, None).place_guest_order(
         cart_token,

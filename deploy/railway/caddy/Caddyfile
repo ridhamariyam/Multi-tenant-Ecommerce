@@ -1,0 +1,79 @@
+# CliQ. ingress on Railway.
+#
+# Railway's edge terminates TLS and forwards plain HTTP to this service on
+# $PORT; Caddy only routes. It is the ONLY public service: the API, MinIO,
+# Postgres and Redis are reachable on Railway's private network only.
+#
+#   $APP_HOST        merchant console + platform admin (admin service)
+#   any other host   a storefront: the CliQ. store's Railway host now, and
+#                    later <brand>.<root> / verified custom domains
+#
+# On every storefront host the same paths as api.<root>/media.<root> in the
+# self-hosted Caddyfile are public: payment/courier/AI webhooks, health, and
+# /<bucket>/* (public product images and presigned uploads, served by MinIO).
+# Everything else of the API stays private.
+#
+# Client IP (F1): Railway documents X-Real-IP as the client address. Caddy
+# takes the client IP from X-Real-IP only when the connection comes from
+# $CADDY_TRUSTED_PROXIES (Railway's edge), then sends exactly that one
+# address upstream in X-Forwarded-For / X-Real-IP, replacing whatever the
+# client sent. Verify after each infrastructure change (docs/railway.md).
+
+{
+	auto_https off
+	admin off
+	servers {
+		trusted_proxies static {$CADDY_TRUSTED_PROXIES:private_ranges}
+		client_ip_headers X-Real-IP
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header -Server
+	log {
+		output stdout
+		format json
+	}
+}
+
+(client_ip) {
+	header_up X-Forwarded-For {client_ip}
+	header_up X-Real-IP {client_ip}
+}
+
+http://{$APP_HOST}:{$PORT} {
+	import common
+	request_body {
+		max_size 25MB
+	}
+	redir / /admin/ 302
+	reverse_proxy {$ADMIN_UPSTREAM} {
+		import client_ip
+	}
+}
+
+http://:{$PORT} {
+	import common
+	request_body {
+		max_size 25MB
+	}
+
+	@media path /{$S3_BUCKET}/*
+	handle @media {
+		reverse_proxy {$MINIO_UPSTREAM}
+	}
+
+	@api path /api/v1/payments/razorpay/webhook* /api/v1/billing/razorpay/webhook /api/v1/webhooks/fashn /api/v1/courier-webhooks/* /media/* /health /health/ready
+	handle @api {
+		reverse_proxy {$API_UPSTREAM} {
+			import client_ip
+		}
+	}
+
+	handle {
+		reverse_proxy {$STOREFRONT_UPSTREAM} {
+			import client_ip
+		}
+	}
+}
