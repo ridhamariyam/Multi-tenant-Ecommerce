@@ -1,10 +1,13 @@
 """Brands pay for their plan with Razorpay Subscriptions (the platform's account).
 
-Flow: the console asks for a checkout (a Razorpay subscription is created,
-with the 14-day trial on a brand's first paid plan) → the owner authorises it
-in Razorpay Checkout → the signed result is verified here and the plan
-switches → Razorpay webhooks keep the status right from then on (renewals,
-failed charges, cancellation). Brands' own Razorpay accounts are never used.
+Every brand starts on a free Basic trial with no payment details. Flow: the
+console asks for a checkout (a Razorpay subscription is created; if the trial
+is still running, its first charge is at the trial's end) → the owner
+authorises it in Razorpay Checkout → the signed result is verified here and
+the plan switches → Razorpay webhooks keep the status right from then on
+(renewals, failed charges, cancellation). Prices are before GST; Razorpay
+charges price + PLATFORM_GST_PERCENT. Brands' own Razorpay accounts are never
+used. A subscription that ends leaves the brand paused (CANCELLED), not deleted.
 """
 
 from __future__ import annotations
@@ -31,9 +34,9 @@ from app.core.exceptions import (
     ValidationError,
 )
 from app.payments import razorpay
-from app.subscriptions.constants import FALLBACK_PLAN, TRIAL_DAYS, SubscriptionStatus
+from app.subscriptions.constants import SubscriptionStatus
 from app.subscriptions.models import BillingWebhookEvent, BrandSubscription, SubscriptionPlan
-from app.subscriptions.service import SubscriptionService, _add_month, grant_allowance, plan_by_code
+from app.subscriptions.service import SubscriptionService, _add_month, grant_allowance, gross_amount, plan_by_code
 from app.tenants.models import Tenant
 
 logger = logging.getLogger(__name__)
@@ -80,8 +83,12 @@ async def ensure_razorpay_plan(session: AsyncSession, plan: SubscriptionPlan) ->
         {
             "period": "monthly",
             "interval": 1,
-            "item": {"name": f"CliQ {plan.name}", "amount": plan.monthly_price, "currency": plan.currency},
-            "notes": {"plan_code": plan.code},
+            "item": {
+                "name": f"CliQ {plan.name} (incl. GST)",
+                "amount": gross_amount(plan.monthly_price),
+                "currency": plan.currency,
+            },
+            "notes": {"plan_code": plan.code, "price_before_gst": str(plan.monthly_price)},
         },
     )
     plan.razorpay_plan_id = str(created["id"])
@@ -105,7 +112,13 @@ async def start_checkout(session: AsyncSession, tenant: Tenant, plan_code: str) 
         raise ConflictError(f"You are already on the {plan.name} plan.")
 
     razorpay_plan_id = await ensure_razorpay_plan(session, plan)
-    trial = not subscription.trial_used
+    now = datetime.now(timezone.utc)
+    # Paying during the free trial: the first charge waits for the trial's end.
+    trial_end = (
+        subscription.current_period_end
+        if subscription.status == SubscriptionStatus.TRIALING.value and subscription.current_period_end > now
+        else None
+    )
     body: dict[str, Any] = {
         "plan_id": razorpay_plan_id,
         "total_count": TOTAL_CYCLES,
@@ -113,8 +126,8 @@ async def start_checkout(session: AsyncSession, tenant: Tenant, plan_code: str) 
         "customer_notify": 1,
         "notes": {"tenant_id": str(tenant.id), "plan_code": plan.code},
     }
-    if trial:
-        body["start_at"] = int((datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)).timestamp())
+    if trial_end is not None:
+        body["start_at"] = int(trial_end.timestamp())
     created = await _call("POST", "/subscriptions", body)
     subscription.pending_plan_id = plan.id
     # The new subscription replaces the stored id only once it is authorised.
@@ -125,9 +138,11 @@ async def start_checkout(session: AsyncSession, tenant: Tenant, plan_code: str) 
         "key_id": _creds().key_id,
         "plan_code": plan.code,
         "plan_name": plan.name,
-        "amount": plan.monthly_price,
+        "amount": gross_amount(plan.monthly_price),
+        "amount_before_gst": plan.monthly_price,
         "currency": plan.currency,
-        "trial_days": TRIAL_DAYS if trial else 0,
+        "trial_days": max(0, (trial_end - now).days) if trial_end else 0,
+        "first_charge_at": trial_end,
         "short_url": created.get("short_url"),
     }
 
@@ -190,9 +205,12 @@ async def cancel(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscripti
     if subscription is None or subscription.billing_provider != "razorpay" or not subscription.external_subscription_id:
         raise ConflictError("There is no paid subscription to cancel.")
     if subscription.status == SubscriptionStatus.TRIALING.value:
-        # Nothing has been charged yet: end it now.
+        # Nothing has been charged yet: drop the mandate; the free trial runs on.
         await _call("POST", f"/subscriptions/{subscription.external_subscription_id}/cancel", {"cancel_at_cycle_end": 0})
-        await _downgrade(session, subscription)
+        subscription.billing_provider = "manual"
+        subscription.external_subscription_id = None
+        subscription.provider_event_at = None
+        subscription.cancel_at_period_end = False
     else:
         await _call("POST", f"/subscriptions/{subscription.external_subscription_id}/cancel", {"cancel_at_cycle_end": 1})
         subscription.cancel_at_period_end = True
@@ -201,17 +219,17 @@ async def cancel(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscripti
 
 
 async def _downgrade(session: AsyncSession, subscription: BrandSubscription) -> None:
-    free = await plan_by_code(session, FALLBACK_PLAN)
+    """The paid subscription ended: the brand is paused on its plan until it pays again."""
     now = datetime.now(timezone.utc)
-    subscription.plan_id = free.id
-    subscription.status = SubscriptionStatus.ACTIVE.value
+    subscription.status = SubscriptionStatus.CANCELLED.value
     subscription.billing_provider = "manual"
     subscription.external_subscription_id = None
     subscription.provider_event_at = None
     subscription.cancel_at_period_end = False
     subscription.past_due_since = None
-    subscription.current_period_start = now
-    subscription.current_period_end = _add_month(now)
+    if subscription.current_period_end > now:
+        # Ended early (e.g. cancelled by Razorpay): pause from now.
+        subscription.current_period_end = max(now, subscription.current_period_start + timedelta(seconds=1))
 
 
 def webhook_signature_ok(raw_body: bytes, signature: str | None) -> bool:

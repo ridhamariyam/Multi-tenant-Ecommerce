@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import math
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.service import record_platform_action
 from app.brands.dependencies import BrandManager
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.error_codes import BrandErrorCode
 from app.core.exceptions import NotFoundError
@@ -21,7 +23,7 @@ from app.merchants.dependencies import PlatformAdmin
 from app.subscriptions import billing
 from app.subscriptions.constants import FEATURES, SubscriptionStatus
 from app.subscriptions.models import SubscriptionPlan
-from app.subscriptions.service import SubscriptionService, lapsed, plan_by_code
+from app.subscriptions.service import SubscriptionService, gross_amount, lapsed, plan_by_code
 from app.tenants.models import Tenant
 from app.tenants.resolver import CurrentTenant
 
@@ -31,7 +33,8 @@ router = APIRouter(tags=["Billing"])
 class PlanRead(BaseModel):
     code: str
     name: str
-    monthly_price: int  # paise
+    monthly_price: int  # paise, before GST
+    monthly_price_with_gst: int  # paise, what Razorpay charges
     currency: str
     monthly_ai_credits: int
     product_limit: int | None
@@ -52,8 +55,13 @@ class SubscriptionRead(BaseModel):
 
 class BillingRead(BaseModel):
     plan: PlanRead | None
-    effective_plan: PlanRead | None  # differs from plan when the subscription lapsed
+    effective_plan: PlanRead | None
     subscription: SubscriptionRead | None
+    # The storefront is closed to the public until the brand pays.
+    paused: bool
+    trial_ends_at: datetime | None
+    trial_days_left: int | None
+    gst_percent: int
     usage: dict[str, int]
     plans: list[PlanRead]
     online_billing: bool
@@ -73,7 +81,8 @@ def plan_read(plan: SubscriptionPlan | None) -> PlanRead | None:
     if plan is None:
         return None
     return PlanRead(
-        code=plan.code, name=plan.name, monthly_price=plan.monthly_price, currency=plan.currency,
+        code=plan.code, name=plan.name, monthly_price=plan.monthly_price,
+        monthly_price_with_gst=gross_amount(plan.monthly_price), currency=plan.currency,
         monthly_ai_credits=plan.monthly_ai_credits, product_limit=plan.product_limit,
         staff_limit=plan.staff_limit, features={f: bool(plan.features.get(f)) for f in FEATURES},
         is_active=plan.is_active,
@@ -83,7 +92,14 @@ def plan_read(plan: SubscriptionPlan | None) -> PlanRead | None:
 async def _billing_read(session: AsyncSession, tenant_id: UUID) -> BillingRead:
     data = await billing.overview(session, tenant_id)
     sub = data["subscription"]
+    now = datetime.now(timezone.utc)
+    trialing = sub is not None and sub.status == SubscriptionStatus.TRIALING.value
+    trial_end = sub.current_period_end if trialing else None
     return BillingRead(
+        paused=bool(sub) and lapsed(sub),
+        trial_ends_at=trial_end,
+        trial_days_left=max(0, math.ceil((trial_end - now).total_seconds() / 86400)) if trial_end else None,
+        gst_percent=get_settings().platform_gst_percent,
         plan=plan_read(data["plan"]),
         effective_plan=plan_read(data["effective_plan"]),
         subscription=SubscriptionRead(

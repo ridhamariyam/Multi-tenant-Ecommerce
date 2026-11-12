@@ -1,9 +1,12 @@
 """Plans, a brand's subscription, plan limits and the monthly AI allowance.
 
+Every new brand starts on Basic with a free trial (no payment details).
 Brands pay through Razorpay Subscriptions (app.subscriptions.billing); the
 platform team can also set a plan by hand (billing_provider = "manual").
-A lapsed subscription (cancelled, unpaid past the grace period, or an
-unpaid trial) falls back to the Free plan's limits; nothing is deleted.
+A lapsed subscription (trial over and unpaid, cancelled, or unpaid past the
+grace period) PAUSES the brand: its storefront is hidden from the public
+(app.tenants.resolver) and the console asks to choose a plan. Nothing is
+deleted and the brand's staff keep access; paying reopens the store.
 """
 
 from __future__ import annotations
@@ -21,10 +24,10 @@ from app.core.error_codes import BillingErrorCode
 from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.subscriptions.constants import (
     DEFAULT_PLANS,
-    FALLBACK_PLAN,
     FEATURE_LABELS,
     NEW_BRAND_PLAN,
     PAST_DUE_GRACE_DAYS,
+    TRIAL_DAYS,
     SubscriptionStatus,
 )
 from app.subscriptions.models import BrandSubscription, SubscriptionPlan
@@ -57,16 +60,28 @@ async def plan_by_code(session: AsyncSession, code: str) -> SubscriptionPlan:
     return plan
 
 
-async def start_free(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscription:
-    """A new brand's subscription (the Free plan). Added to the caller's transaction."""
+def gross_amount(price: int) -> int:
+    """A plan price (paise, before GST) plus platform GST, rounded half up."""
+    from app.core.config import get_settings
+
+    percent = get_settings().platform_gst_percent
+    return (price * (100 + percent) + 50) // 100
+
+
+async def start_trial(session: AsyncSession, tenant_id: uuid.UUID) -> BrandSubscription:
+    """A new brand's subscription: Basic, free for TRIAL_DAYS, no payment details.
+
+    Added to the caller's transaction. The trial is used up once given.
+    """
     plan = await plan_by_code(session, NEW_BRAND_PLAN)
     now = datetime.now(timezone.utc)
     subscription = BrandSubscription(
         tenant_id=tenant_id,
         plan_id=plan.id,
-        status=SubscriptionStatus.ACTIVE.value,
+        status=SubscriptionStatus.TRIALING.value,
         current_period_start=now,
-        current_period_end=_add_month(now),
+        current_period_end=now + timedelta(days=TRIAL_DAYS),
+        trial_used=True,
     )
     session.add(subscription)
     await session.flush()
@@ -129,14 +144,19 @@ class SubscriptionService:
         return subscription, plan
 
     async def effective_plan(self) -> SubscriptionPlan | None:
-        """The plan whose limits apply right now (None = unlimited, pre-plan brand)."""
+        """The plan whose limits apply (None = unlimited, pre-plan brand).
+
+        A lapsed brand keeps its plan's limits; it is paused instead (see paused()).
+        """
         current = await self.current()
-        if current is None:
-            return None
-        subscription, plan = current
-        if lapsed(subscription):
-            return await plan_by_code(self.session, FALLBACK_PLAN)
-        return plan
+        return None if current is None else current[1]
+
+    async def paused(self) -> bool:
+        """Whether the brand's storefront is closed to the public for non-payment."""
+        row = await self.session.scalar(
+            select(BrandSubscription).where(BrandSubscription.tenant_id == self.tenant_id)
+        )
+        return row is not None and lapsed(row)
 
     async def require_feature(self, feature: str) -> None:
         plan = await self.effective_plan()
@@ -205,7 +225,7 @@ class SubscriptionService:
 
 
 def lapsed(subscription: BrandSubscription, now: datetime | None = None) -> bool:
-    """Whether the subscription no longer earns its plan's limits."""
+    """Whether the brand is paused: trial over and unpaid, cancelled, or unpaid too long."""
     now = now or datetime.now(timezone.utc)
     if subscription.status == SubscriptionStatus.CANCELLED.value:
         return True
@@ -213,7 +233,14 @@ def lapsed(subscription: BrandSubscription, now: datetime | None = None) -> bool
         since = subscription.past_due_since or subscription.current_period_end
         return now - since > timedelta(days=PAST_DUE_GRACE_DAYS)
     if subscription.status == SubscriptionStatus.TRIALING.value:
+        if subscription.billing_provider == "razorpay":
+            # Paid for during the trial: Razorpay charges at its end; allow for retries.
+            return now - subscription.current_period_end > timedelta(days=PAST_DUE_GRACE_DAYS)
         return subscription.current_period_end <= now
+    if subscription.status == SubscriptionStatus.ACTIVE.value and subscription.billing_provider == "razorpay":
+        # A paid period that ended with no renewal reported (webhook lost or charge
+        # never made): pause after the grace period rather than stay open forever.
+        return now - subscription.current_period_end > timedelta(days=PAST_DUE_GRACE_DAYS)
     return False
 
 

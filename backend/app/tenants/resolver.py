@@ -158,7 +158,12 @@ async def resolve_tenant(
                 found = await repository.get_active_by_subdomain(subdomain)
         if found is not None:
             candidate, public = found
-            # An unpublished store is hidden from the public, not from its own staff.
+            if public:
+                # A brand paused for non-payment is closed like an unpublished store.
+                from app.subscriptions.service import SubscriptionService
+
+                public = not await SubscriptionService(session, candidate.id).paused()
+            # An unpublished or paused store is hidden from the public, not from its own staff.
             if public or _staff_token_for(request, candidate):
                 tenant = candidate
 

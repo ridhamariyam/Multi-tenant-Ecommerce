@@ -70,8 +70,11 @@ async def make_merchant(session: AsyncSession):
 
 @pytest_asyncio.fixture(loop_scope="session")
 async def make_brand(platform: AsyncClient, session: AsyncSession):
-    async def _make(owner: Merchant, name: str, *, plan: str = "GROWTH", **extra) -> Brand:
-        """A new brand. Most tests are not about plans, so it gets Growth unless asked."""
+    async def _make(owner: Merchant, name: str, *, plan: str = "PRO", **extra) -> Brand:
+        """A new brand. Most tests are not about plans, so it gets Pro (active) unless asked.
+
+        plan="TRIAL" keeps what registration gives: the free Basic trial.
+        """
         from app.subscriptions.constants import SubscriptionStatus
         from app.subscriptions.service import SubscriptionService
 
@@ -80,7 +83,7 @@ async def make_brand(platform: AsyncClient, session: AsyncSession):
         )
         assert response.status_code == 201, response.text
         data = response.json()["data"]
-        if plan != "FREE":
+        if plan != "TRIAL":
             await SubscriptionService(session, UUID(data["brand"]["id"])).change_plan(plan, SubscriptionStatus.ACTIVE)
         return Brand(
             id=UUID(data["brand"]["id"]),

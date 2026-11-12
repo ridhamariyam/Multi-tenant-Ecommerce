@@ -275,6 +275,8 @@ class Settings(BaseSettings):
     # (https://api.<root>/api/v1/billing/razorpay/webhook) may use its own
     # secret; unset = RAZORPAY_WEBHOOK_SECRET.
     razorpay_billing_webhook_secret: str | None = Field(default=None, repr=False)
+    # GST added on top of plan prices when brands pay for their plan.
+    platform_gst_percent: int = Field(default=18, ge=0, le=28)
 
     razorpay_key_id: str | None = None
     razorpay_key_secret: str | None = None

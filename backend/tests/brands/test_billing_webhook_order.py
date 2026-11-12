@@ -29,8 +29,8 @@ async def _send(platform, event: str, sub_id: str, *, event_id: str, created_at:
     return response.json()["data"]["result"]
 
 
-async def _paid_brand(platform, make_merchant, make_brand, email: str, plan: str = "STARTER"):
-    brand = await make_brand(await make_merchant(email), email.split("@")[0], plan="FREE")
+async def _paid_brand(platform, make_merchant, make_brand, email: str, plan: str = "BASIC"):
+    brand = await make_brand(await make_merchant(email), email.split("@")[0], plan="TRIAL")
     started = (await platform.post(f"{BILLING}/checkout", json={"plan_code": plan}, headers=brand.headers)).json()["data"]
     confirmed = await platform.post(f"{BILLING}/confirm", json=_signed("pay_1", started["subscription_id"]), headers=brand.headers)
     assert confirmed.status_code == 200, confirmed.text
@@ -63,10 +63,11 @@ async def test_a_delayed_charge_after_cancellation_keeps_the_brand_cancelled(
     # 3. A delayed charge (sent before the cancellation, retried after) arrives.
     late = await _send(platform, "subscription.charged", sub_id, event_id="evt_0", created_at=t - 60,
                        current_start=t, current_end=t + month, status="active")  # fmt: skip
-    # 4. The brand stays cancelled (back on Free).
+    # 4. The brand stays cancelled (paused until it pays again).
     data = await _billing(platform, brand)
     assert late == "ignored"
-    assert data["plan"]["code"] == "FREE" and data["subscription"]["billing_provider"] == "manual"
+    assert data["subscription"]["status"] == "CANCELLED" and data["paused"] is True
+    assert data["subscription"]["billing_provider"] == "manual"
     logged = await session.scalar(select(BillingWebhookEvent).where(BillingWebhookEvent.provider_event_id == "evt_0"))
     assert logged.outcome == "ignored" and "ended" in logged.reason
 
@@ -100,7 +101,7 @@ async def test_duplicate_cancellations_are_no_ops(platform, session, make_mercha
     assert (first, retry, other) == ("applied", "duplicate", "ignored")
     count = await session.scalar(select(func.count()).select_from(BillingWebhookEvent).where(BillingWebhookEvent.provider_event_id == "evt_x"))
     assert count == 1
-    assert (await _billing(platform, brand))["plan"]["code"] == "FREE"
+    assert (await _billing(platform, brand))["subscription"]["status"] == "CANCELLED"
 
 
 async def test_a_new_subscription_after_cancellation_activates(
@@ -110,7 +111,7 @@ async def test_a_new_subscription_after_cancellation_activates(
     t = int(time.time())
     await _send(platform, "subscription.cancelled", old_id, event_id="evt_end", created_at=t + 1000, status="cancelled")
 
-    started = (await platform.post(f"{BILLING}/checkout", json={"plan_code": "GROWTH"}, headers=brand.headers)).json()["data"]
+    started = (await platform.post(f"{BILLING}/checkout", json={"plan_code": "PRO"}, headers=brand.headers)).json()["data"]
     await platform.post(f"{BILLING}/confirm", json=_signed("pay_2", started["subscription_id"]), headers=brand.headers)
     # Its first charge is older than the old subscription's last event: ordering is per subscription.
     result = await _send(platform, "subscription.charged", started["subscription_id"], event_id="evt_new",
@@ -118,7 +119,8 @@ async def test_a_new_subscription_after_cancellation_activates(
 
     data = await _billing(platform, brand)
     assert result == "applied"
-    assert data["plan"]["code"] == "GROWTH" and data["subscription"]["status"] == "ACTIVE"
+    assert data["plan"]["code"] == "PRO" and data["subscription"]["status"] == "ACTIVE"
+    assert data["paused"] is False
 
 
 async def test_out_of_order_events_do_not_overwrite_newer_state(
@@ -143,7 +145,7 @@ async def test_out_of_order_events_do_not_overwrite_newer_state(
 async def test_webhook_retries_do_not_duplicate_credit_grants(
     platform, session, make_merchant, make_brand, razorpay_billing
 ):
-    brand, sub_id = await _paid_brand(platform, make_merchant, make_brand, "credits@brands.example.com", plan="GROWTH")
+    brand, sub_id = await _paid_brand(platform, make_merchant, make_brand, "credits@brands.example.com", plan="PRO")
     t = int(time.time())
     period = {"current_start": t + 86400 * 14, "current_end": t + 86400 * 44, "status": "active"}
 
@@ -156,7 +158,7 @@ async def test_webhook_retries_do_not_duplicate_credit_grants(
 
     grants = await session.scalar(
         select(func.count()).select_from(AiUsageLedger).where(
-            AiUsageLedger.tenant_id == brand.id, AiUsageLedger.reference.like("plan:GROWTH:%")
+            AiUsageLedger.tenant_id == brand.id, AiUsageLedger.reference.like("plan:PRO:%")
         )
     )
     assert results == ["applied", "duplicate", "applied"]
@@ -168,14 +170,15 @@ async def test_an_event_naming_another_brand_is_rejected(
     platform, session, make_merchant, make_brand, razorpay_billing
 ):
     brand, sub_id = await _paid_brand(platform, make_merchant, make_brand, "own@brands.example.com")
-    other = await make_brand(await make_merchant("thief@brands.example.com"), "Thief", plan="FREE")
+    other = await make_brand(await make_merchant("thief@brands.example.com"), "Thief", plan="TRIAL")
     t = int(time.time())
 
     result = await _send(platform, "subscription.cancelled", sub_id, event_id="evt_t", created_at=t,
                          status="cancelled", notes={"tenant_id": str(other.id)})  # fmt: skip
 
     assert result == "rejected"
-    assert (await _billing(platform, brand))["plan"]["code"] == "STARTER"
+    data = await _billing(platform, brand)
+    assert data["plan"]["code"] == "BASIC" and data["subscription"]["status"] != "CANCELLED"
 
 
 async def test_an_unsigned_event_is_not_recorded(platform, session, razorpay_billing):

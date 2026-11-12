@@ -48,7 +48,7 @@ async def test_production_bootstrap_creates_the_admin_and_no_demo_accounts(sessi
 
     store = await session.scalar(select(Store).where(Store.tenant_id == tenant.id))
     assert store.subdomain == "bootstrap-store" and store.published is True
-    assert (await SubscriptionService(session, tenant.id).effective_plan()).code == "PRO"
+    assert (await SubscriptionService(session, tenant.id).effective_plan()).code == "PLATFORM"
     assert await certificate_allowed(session, "bootstrap-store.localhost") is True
 
 

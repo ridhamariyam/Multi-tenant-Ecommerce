@@ -3,7 +3,8 @@ import { request } from "./client";
 export interface Plan {
   code: string;
   name: string;
-  monthly_price: number; // paise
+  monthly_price: number; // paise, before GST
+  monthly_price_with_gst: number; // paise, what is charged
   currency: string;
   monthly_ai_credits: number;
   product_limit: number | null;
@@ -27,6 +28,11 @@ export interface Billing {
   usage: { products: number; staff: number };
   plans: Plan[];
   online_billing: boolean;
+  /** The storefront is closed to shoppers until the brand pays. */
+  paused: boolean;
+  trial_ends_at: string | null;
+  trial_days_left: number | null;
+  gst_percent: number;
 }
 
 export interface BillingCheckout {
@@ -34,9 +40,11 @@ export interface BillingCheckout {
   key_id: string;
   plan_code: string;
   plan_name: string;
-  amount: number;
+  amount: number; // incl. GST
+  amount_before_gst: number;
   currency: string;
   trial_days: number;
+  first_charge_at: string | null;
 }
 
 export const getBilling = () => request<Billing>("/brand/billing");
@@ -48,7 +56,7 @@ export const cancelSubscription = () => request<Billing>("/brand/billing/cancel"
 
 // Platform operators.
 export const listPlans = () => request<Plan[]>("/platform/admin/plans", { session: "platform" });
-export const savePlan = (code: string, body: Omit<Plan, "code" | "currency">) =>
+export const savePlan = (code: string, body: Omit<Plan, "code" | "currency" | "monthly_price_with_gst">) =>
   request<Plan>(`/platform/admin/plans/${encodeURIComponent(code)}`, { method: "PUT", body, session: "platform" });
 export const assignPlan = (brandId: string, planCode: string) =>
   request<Plan>(`/platform/admin/brands/${encodeURIComponent(brandId)}/plan`, { method: "PUT", body: { plan_code: planCode }, session: "platform" });
