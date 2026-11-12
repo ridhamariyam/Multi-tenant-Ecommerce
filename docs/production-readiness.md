@@ -47,10 +47,19 @@ None of the external providers has been tested live yet.
 | F10 | Medium | Connection budget: each API worker may hold 20 DB connections; PostgreSQL allows 100 | Keep `API_WORKERS × 20 + 40 < 100` (≤ 3 workers at the default pool), or lower `DB_POOL_SIZE`/`DB_MAX_OVERFLOW`. Now in `deployment.md` |
 | F11 | Medium | No CPU or memory limits on containers. A runaway build, image optimizer or AI worker can starve PostgreSQL | Add `mem_limit`/`cpus` once real usage is known; until then use an 8 GB server with 2–4 GB swap |
 | F12 | Medium | Let's Encrypt: 50 new certificates per registered domain per week; each new brand subdomain uses one | Fine at launch. Beyond that, a wildcard cert via DNS-01 (Caddy DNS module), which is NOT IMPLEMENTED |
-| F13 | Medium | Billing webhook order: a late, retried `subscription.charged` arriving after `subscription.cancelled` sets the brand back to ACTIVE | Ignore activation events for a cancelled subscription, or compare event timestamps |
-| F14 | Medium | Mobile carrier NAT (very common in India) puts many shoppers behind one IP, which can then hit guest checkout's 10/min per IP per brand | Watch 429s in the logs after launch; raise `GUEST_CHECKOUT_RATE_LIMIT_ATTEMPTS` if real shoppers hit it |
+| F13 | ~~Medium~~ **Fixed 2026-11-12** (a7d7907) | Billing webhook ordering | Each Razorpay event id is recorded once (`billing_webhook_events`, retries = no-ops); events older than the last applied one, activations for a subscription Razorpay reports as ended, and events naming another brand are rejected with a stored reason; a cancelled subscription's id is cleared so later events for it are ignored. 8 regression tests (`tests/brands/test_billing_webhook_order.py`). Migration `f4a6b8c0d2e3` live on Railway |
+| F14 | ~~Medium~~ **Fixed 2026-11-12** (a7d7907) | Guest checkout behind carrier NAT | Limit is now per shopper (brand + IP + guest cart, or the Razorpay order when confirming) at `GUEST_CHECKOUT_RATE_LIMIT_ATTEMPTS` (10/min) plus a per-brand-IP ceiling `GUEST_CHECKOUT_IP_RATE_LIMIT_ATTEMPTS` (60/min) that minting carts cannot escape. 6 tests incl. a spoofed X-Forwarded-For. Remaining risk: >60 checkout attempts/min from one NAT IP for one brand; watch 429s |
 | F15 | Medium | Single server: no high availability; the scheduler and AI worker are single instances by design (do not scale them to 2: jobs have no distributed lock) | Acceptable for launch; managed Postgres + object storage are the first steps to HA |
-| F16 | Medium | No CI pipeline (tests are run by hand) | Add CI running `backend/scripts/test.sh` per folder + both frontend builds |
+| F16 | Medium | No CI pipeline | `.github/workflows/ci.yml` added 2026-11-12 (backend per folder via `scripts/test.sh`, storefront build + audit, admin lint/test/build; never deploys). **Not running yet: the repo has no git remote** |
+
+### Found and fixed during the Railway deployment (2026-11-12)
+
+| # | Severity | Finding | Fix and evidence |
+|---|---|---|---|
+| F23 | **High** | MinIO's `download` policy also allows **listing the bucket**: anyone could enumerate every brand's image keys, including `pending/` uploads (unpublished product photos) | Both Caddyfiles now pass only `POST /<bucket>` (presigned uploads) and `GET/HEAD` of single objects without a query string, outside `pending/`; everything else 404. Live: `/cliq-media/`, `?list-type=2`, `pending/`, `?acl` → 404, images 200 (5745f2b) |
+| F24 | **High** | On Railway the edge connects from `100.64.0.0/10`, outside Caddy's `private_ranges`: every shopper would have had the edge's IP (shared rate limits, the F1 problem again) | `CADDY_TRUSTED_PROXIES=100.64.0.0/10`, client IP from `X-Real-IP`. Live: spoofed `X-Real-IP`/`X-Forwarded-For` are overwritten by the edge; Caddy logs the real client |
+| F25 | Medium | Railway volume backups are Pro-only; on Hobby nothing backed up the database | `deploy/railway/backup` cron: dump → Railway bucket + image copy + restore drill each night. First run: drill ok |
+| F26 | Low | Railway runs Postgres 18; dev/self-hosted use 16. A Railway dump does not restore into 16 | Backup job uses PG 18 tools; documented in `docs/railway.md` |
 
 ### Low
 
